@@ -1,0 +1,65 @@
+CC     = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcc64.exe"
+LD     = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcclnk64.exe"
+LIBCMD = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcclib64.exe"
+CFLAGS = -dll -noregistrylookup  -c -Zp8 -DLCC_WIN64 -DMATLAB_MEX_FILE -DMX_COMPAT_32 -nodeclspec 
+LDFLAGS = -s -dll -L"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\lib64" -entry LibMain -map sfun.map 
+LIBFLAGS = 
+
+OBJECTS = \
+	"Model_01_sfun.obj"\
+	"c1_Model_01.obj"\
+	"c2_Model_01.obj"\
+	"c3_Model_01.obj"\
+	"c4_Model_01.obj"\
+	"c5_Model_01.obj"\
+	"c6_Model_01.obj"\
+	"c7_Model_01.obj"\
+	"c8_Model_01.obj"\
+	"c9_Model_01.obj"\
+	"c10_Model_01.obj"\
+	"Model_01_sfun_registry.obj"\
+	"lccstub.obj"\
+	"Model_01_sfun.def"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\sf_runtime.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwblas.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmx.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmex.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmat.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libfixedpoint.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libut.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwmathutil.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libemlrt.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwsl_log_load_blocks.lib"\
+	"C:\Program Files\MATLAB\R2014a\lib\win64\libippmwipt.lib"\
+
+INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg\Documents\MATLAB\slprj\_sfprj\Model_01\_self\sfun\src" 
+ 
+
+Model_01_sfun.mexw64 : $(MAKEFILE) $(OBJECTS)
+	$(LD) $(LDFLAGS) -o Model_01_sfun.mexw64 @Model_01_sfun.lmko
+Model_01_sfun.obj :	"Model_01_sfun.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "Model_01_sfun.c"
+c1_Model_01.obj :	"c1_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c1_Model_01.c"
+c2_Model_01.obj :	"c2_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c2_Model_01.c"
+c3_Model_01.obj :	"c3_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c3_Model_01.c"
+c4_Model_01.obj :	"c4_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c4_Model_01.c"
+c5_Model_01.obj :	"c5_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c5_Model_01.c"
+c6_Model_01.obj :	"c6_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c6_Model_01.c"
+c7_Model_01.obj :	"c7_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c7_Model_01.c"
+c8_Model_01.obj :	"c8_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c8_Model_01.c"
+c9_Model_01.obj :	"c9_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c9_Model_01.c"
+c10_Model_01.obj :	"c10_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c10_Model_01.c"
+Model_01_sfun_registry.obj :	"Model_01_sfun_registry.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "Model_01_sfun_registry.c"
+lccstub.obj :	"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"
