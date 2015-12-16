@@ -53,5 +53,15 @@ rho = [0.2;0.1;0.05];
 %Target point orientation
 ita = [0.12;0.05;-0.15;0.98];
 
+%Measurement data
+
+Cov_r = 3e-3*eye(3,3);
+Cov_nu = 5e-5*eye(4,4);
+
+%Orbital parameters
+n = 0.0012;
+
+%Simulation parameters
+t_delta = 0.01;
 
 

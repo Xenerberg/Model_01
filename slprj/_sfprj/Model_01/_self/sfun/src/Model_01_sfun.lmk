@@ -17,6 +17,19 @@ OBJECTS = \
 	"c8_Model_01.obj"\
 	"c9_Model_01.obj"\
 	"c10_Model_01.obj"\
+	"c11_Model_01.obj"\
+	"c12_Model_01.obj"\
+	"c13_Model_01.obj"\
+	"c14_Model_01.obj"\
+	"c15_Model_01.obj"\
+	"c16_Model_01.obj"\
+	"c17_Model_01.obj"\
+	"c18_Model_01.obj"\
+	"c19_Model_01.obj"\
+	"c20_Model_01.obj"\
+	"c21_Model_01.obj"\
+	"c22_Model_01.obj"\
+	"c23_Model_01.obj"\
 	"Model_01_sfun_registry.obj"\
 	"lccstub.obj"\
 	"Model_01_sfun.def"\
@@ -32,7 +45,7 @@ OBJECTS = \
 	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwsl_log_load_blocks.lib"\
 	"C:\Program Files\MATLAB\R2014a\lib\win64\libippmwipt.lib"\
 
-INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg\Documents\MATLAB\slprj\_sfprj\Model_01\_self\sfun\src" 
+INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg-2\Documents\MATLAB\Model_01\slprj\_sfprj\Model_01\_self\sfun\src" 
  
 
 Model_01_sfun.mexw64 : $(MAKEFILE) $(OBJECTS)
@@ -59,6 +72,32 @@ c9_Model_01.obj :	"c9_Model_01.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c9_Model_01.c"
 c10_Model_01.obj :	"c10_Model_01.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c10_Model_01.c"
+c11_Model_01.obj :	"c11_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c11_Model_01.c"
+c12_Model_01.obj :	"c12_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c12_Model_01.c"
+c13_Model_01.obj :	"c13_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c13_Model_01.c"
+c14_Model_01.obj :	"c14_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c14_Model_01.c"
+c15_Model_01.obj :	"c15_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c15_Model_01.c"
+c16_Model_01.obj :	"c16_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c16_Model_01.c"
+c17_Model_01.obj :	"c17_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c17_Model_01.c"
+c18_Model_01.obj :	"c18_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c18_Model_01.c"
+c19_Model_01.obj :	"c19_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c19_Model_01.c"
+c20_Model_01.obj :	"c20_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c20_Model_01.c"
+c21_Model_01.obj :	"c21_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c21_Model_01.c"
+c22_Model_01.obj :	"c22_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c22_Model_01.c"
+c23_Model_01.obj :	"c23_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c23_Model_01.c"
 Model_01_sfun_registry.obj :	"Model_01_sfun_registry.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "Model_01_sfun_registry.c"
 lccstub.obj :	"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"

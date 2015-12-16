@@ -24,7 +24,7 @@ static const char * c8_debug_family_names[11] = { "v_n", "q_n", "q_om",
 static const char * c8_b_debug_family_names[4] = { "nargin", "nargout", "v",
   "SkewSymmetricTensor" };
 
-static const char * c8_c_debug_family_names[8] = { "q_0", "q_v", "cross_q_v",
+static const char * c8_c_debug_family_names[8] = { "q_v", "q_0", "cross_q_v",
   "nargin", "nargout", "q", "flag", "CrossTensor" };
 
 /* Function Declarations */
@@ -388,32 +388,32 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
   c8_q[4], real_T c8_flag, real_T c8_CrossTensor[16])
 {
   uint32_T c8_debug_family_var_map[8];
-  real_T c8_q_0;
   real_T c8_q_v[3];
+  real_T c8_q_0;
   real_T c8_cross_q_v[9];
   real_T c8_nargin = 2.0;
   real_T c8_nargout = 1.0;
   int32_T c8_i23;
   int32_T c8_i24;
+  int32_T c8_i25;
   real_T c8_v[3];
   uint32_T c8_b_debug_family_var_map[4];
   real_T c8_b_nargin = 1.0;
   real_T c8_b_nargout = 1.0;
-  int32_T c8_i25;
-  real_T c8_a;
   int32_T c8_i26;
+  real_T c8_a;
+  int32_T c8_i27;
   static real_T c8_b[9] = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
 
   real_T c8_y[9];
-  int32_T c8_i27;
   int32_T c8_i28;
   int32_T c8_i29;
   int32_T c8_i30;
   int32_T c8_i31;
   int32_T c8_i32;
   int32_T c8_i33;
-  real_T c8_b_a;
   int32_T c8_i34;
+  real_T c8_b_a;
   int32_T c8_i35;
   int32_T c8_i36;
   int32_T c8_i37;
@@ -424,10 +424,10 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
   int32_T c8_i42;
   _SFD_SYMBOL_SCOPE_PUSH_EML(0U, 8U, 8U, c8_c_debug_family_names,
     c8_debug_family_var_map);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c8_q_0, 0U, c8_b_sf_marshallOut,
-    c8_b_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c8_q_v, 1U, c8_c_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c8_q_v, 0U, c8_c_sf_marshallOut,
     c8_d_sf_marshallIn);
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c8_q_0, 1U, c8_b_sf_marshallOut,
+    c8_b_sf_marshallIn);
   _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c8_cross_q_v, 2U, c8_e_sf_marshallOut,
     c8_e_sf_marshallIn);
   _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c8_nargin, 3U, c8_b_sf_marshallOut,
@@ -442,15 +442,20 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
     c8_c_sf_marshallIn);
   CV_SCRIPT_FCN(0, 0);
   _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 4);
-  c8_q_0 = c8_q[3];
+  for (c8_i23 = 0; c8_i23 < 16; c8_i23++) {
+    c8_CrossTensor[c8_i23] = 0.0;
+  }
+
   _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 5);
-  for (c8_i23 = 0; c8_i23 < 3; c8_i23++) {
-    c8_q_v[c8_i23] = c8_q[c8_i23];
+  for (c8_i24 = 0; c8_i24 < 3; c8_i24++) {
+    c8_q_v[c8_i24] = c8_q[c8_i24];
   }
 
   _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 6);
-  for (c8_i24 = 0; c8_i24 < 3; c8_i24++) {
-    c8_v[c8_i24] = c8_q_v[c8_i24];
+  c8_q_0 = c8_q[3];
+  _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 7);
+  for (c8_i25 = 0; c8_i25 < 3; c8_i25++) {
+    c8_v[c8_i25] = c8_q_v[c8_i25];
   }
 
   _SFD_SYMBOL_SCOPE_PUSH_EML(0U, 4U, 4U, c8_b_debug_family_names,
@@ -465,8 +470,8 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
     c8_e_sf_marshallIn);
   CV_SCRIPT_FCN(1, 0);
   _SFD_SCRIPT_CALL(1U, chartInstance->c8_sfEvent, 2);
-  for (c8_i25 = 0; c8_i25 < 9; c8_i25++) {
-    c8_cross_q_v[c8_i25] = 0.0;
+  for (c8_i26 = 0; c8_i26 < 9; c8_i26++) {
+    c8_cross_q_v[c8_i26] = 0.0;
   }
 
   _SFD_SCRIPT_CALL(1U, chartInstance->c8_sfEvent, 3);
@@ -489,36 +494,36 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
   c8_cross_q_v[5] = c8_v[0];
   _SFD_SCRIPT_CALL(1U, chartInstance->c8_sfEvent, -11);
   _SFD_SYMBOL_SCOPE_POP();
-  _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 7);
+  _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 8);
   switch ((int32_T)_SFD_INTEGER_CHECK("flag", c8_flag)) {
    case 0:
     CV_SCRIPT_SWITCH(0, 0, 1);
-    _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 9);
+    _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 10);
     c8_a = c8_q_0;
-    for (c8_i26 = 0; c8_i26 < 9; c8_i26++) {
-      c8_y[c8_i26] = c8_a * c8_b[c8_i26];
+    for (c8_i27 = 0; c8_i27 < 9; c8_i27++) {
+      c8_y[c8_i27] = c8_a * c8_b[c8_i27];
     }
 
-    c8_i27 = 0;
     c8_i28 = 0;
-    for (c8_i29 = 0; c8_i29 < 3; c8_i29++) {
-      for (c8_i30 = 0; c8_i30 < 3; c8_i30++) {
-        c8_CrossTensor[c8_i30 + c8_i27] = -c8_cross_q_v[c8_i30 + c8_i28] +
-          c8_y[c8_i30 + c8_i28];
+    c8_i29 = 0;
+    for (c8_i30 = 0; c8_i30 < 3; c8_i30++) {
+      for (c8_i31 = 0; c8_i31 < 3; c8_i31++) {
+        c8_CrossTensor[c8_i31 + c8_i28] = -c8_cross_q_v[c8_i31 + c8_i29] +
+          c8_y[c8_i31 + c8_i29];
       }
 
-      c8_i27 += 4;
-      c8_i28 += 3;
+      c8_i28 += 4;
+      c8_i29 += 3;
     }
 
-    for (c8_i31 = 0; c8_i31 < 3; c8_i31++) {
-      c8_CrossTensor[c8_i31 + 12] = c8_q_v[c8_i31];
+    for (c8_i32 = 0; c8_i32 < 3; c8_i32++) {
+      c8_CrossTensor[c8_i32 + 12] = c8_q_v[c8_i32];
     }
 
-    c8_i32 = 0;
-    for (c8_i33 = 0; c8_i33 < 3; c8_i33++) {
-      c8_CrossTensor[c8_i32 + 3] = -c8_q_v[c8_i33];
-      c8_i32 += 4;
+    c8_i33 = 0;
+    for (c8_i34 = 0; c8_i34 < 3; c8_i34++) {
+      c8_CrossTensor[c8_i33 + 3] = -c8_q_v[c8_i34];
+      c8_i33 += 4;
     }
 
     c8_CrossTensor[15] = c8_q_0;
@@ -526,32 +531,32 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
 
    case 1:
     CV_SCRIPT_SWITCH(0, 0, 2);
-    _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 11);
+    _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 12);
     c8_b_a = c8_q_0;
-    for (c8_i34 = 0; c8_i34 < 9; c8_i34++) {
-      c8_y[c8_i34] = c8_b_a * c8_b[c8_i34];
+    for (c8_i35 = 0; c8_i35 < 9; c8_i35++) {
+      c8_y[c8_i35] = c8_b_a * c8_b[c8_i35];
     }
 
-    c8_i35 = 0;
     c8_i36 = 0;
-    for (c8_i37 = 0; c8_i37 < 3; c8_i37++) {
-      for (c8_i38 = 0; c8_i38 < 3; c8_i38++) {
-        c8_CrossTensor[c8_i38 + c8_i35] = c8_cross_q_v[c8_i38 + c8_i36] +
-          c8_y[c8_i38 + c8_i36];
+    c8_i37 = 0;
+    for (c8_i38 = 0; c8_i38 < 3; c8_i38++) {
+      for (c8_i39 = 0; c8_i39 < 3; c8_i39++) {
+        c8_CrossTensor[c8_i39 + c8_i36] = c8_cross_q_v[c8_i39 + c8_i37] +
+          c8_y[c8_i39 + c8_i37];
       }
 
-      c8_i35 += 4;
-      c8_i36 += 3;
+      c8_i36 += 4;
+      c8_i37 += 3;
     }
 
-    for (c8_i39 = 0; c8_i39 < 3; c8_i39++) {
-      c8_CrossTensor[c8_i39 + 12] = c8_q_v[c8_i39];
+    for (c8_i40 = 0; c8_i40 < 3; c8_i40++) {
+      c8_CrossTensor[c8_i40 + 12] = c8_q_v[c8_i40];
     }
 
-    c8_i40 = 0;
-    for (c8_i41 = 0; c8_i41 < 3; c8_i41++) {
-      c8_CrossTensor[c8_i40 + 3] = -c8_q_v[c8_i41];
-      c8_i40 += 4;
+    c8_i41 = 0;
+    for (c8_i42 = 0; c8_i42 < 3; c8_i42++) {
+      c8_CrossTensor[c8_i41 + 3] = -c8_q_v[c8_i42];
+      c8_i41 += 4;
     }
 
     c8_CrossTensor[15] = c8_q_0;
@@ -559,14 +564,10 @@ static void c8_fn_CrossTensor(SFc8_Model_01InstanceStruct *chartInstance, real_T
 
    default:
     CV_SCRIPT_SWITCH(0, 0, 0);
-    _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, 13);
-    for (c8_i42 = 0; c8_i42 < 16; c8_i42++) {
-      c8_CrossTensor[c8_i42] = 0.0;
-    }
     break;
   }
 
-  _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, -13);
+  _SFD_SCRIPT_CALL(0U, chartInstance->c8_sfEvent, -12);
   _SFD_SYMBOL_SCOPE_POP();
 }
 
@@ -576,10 +577,10 @@ static void init_script_number_translation(uint32_T c8_machineNumber, uint32_T
   (void)c8_machineNumber;
   _SFD_SCRIPT_TRANSLATION(c8_chartNumber, c8_instanceNumber, 0U,
     sf_debug_get_script_id(
-    "C:\\Users\\Iseberg\\Documents\\MATLAB\\fn_CrossTensor.m"));
+    "C:\\Users\\Iseberg-2\\Documents\\MATLAB\\Model_01\\fn_CrossTensor.m"));
   _SFD_SCRIPT_TRANSLATION(c8_chartNumber, c8_instanceNumber, 1U,
     sf_debug_get_script_id(
-    "C:\\Users\\Iseberg\\Documents\\MATLAB\\fn_VectorToSkewSymmetricTensor.m"));
+    "C:\\Users\\Iseberg-2\\Documents\\MATLAB\\Model_01\\fn_VectorToSkewSymmetricTensor.m"));
 }
 
 static const mxArray *c8_sf_marshallOut(void *chartInstanceVoid, void *c8_inData)
@@ -1035,9 +1036,9 @@ static void c8_info_helper(const mxArray **c8_info)
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 0);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg/Documents/MATLAB/fn_CrossTensor.m"), "resolved",
-                  "resolved", 0);
-  sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(1447948888U), "fileTimeLo",
+    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_CrossTensor.m"),
+                  "resolved", "resolved", 0);
+  sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(1450227411U), "fileTimeLo",
                   "fileTimeLo", 0);
   sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 0);
@@ -1050,16 +1051,16 @@ static void c8_info_helper(const mxArray **c8_info)
   sf_mex_addfield(*c8_info, sf_mex_duplicatearraysafe(&c8_rhs0), "rhs", "rhs", 0);
   sf_mex_addfield(*c8_info, sf_mex_duplicatearraysafe(&c8_lhs0), "lhs", "lhs", 0);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg/Documents/MATLAB/fn_CrossTensor.m"), "context",
-                  "context", 1);
+    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_CrossTensor.m"),
+                  "context", "context", 1);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
     "fn_VectorToSkewSymmetricTensor"), "name", "name", 1);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 1);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg/Documents/MATLAB/fn_VectorToSkewSymmetricTensor.m"),
+    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_VectorToSkewSymmetricTensor.m"),
                   "resolved", "resolved", 1);
-  sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(1447321639U), "fileTimeLo",
+  sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(1450040424U), "fileTimeLo",
                   "fileTimeLo", 1);
   sf_mex_addfield(*c8_info, c8_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 1);
@@ -1072,8 +1073,8 @@ static void c8_info_helper(const mxArray **c8_info)
   sf_mex_addfield(*c8_info, sf_mex_duplicatearraysafe(&c8_rhs1), "rhs", "rhs", 1);
   sf_mex_addfield(*c8_info, sf_mex_duplicatearraysafe(&c8_lhs1), "lhs", "lhs", 1);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg/Documents/MATLAB/fn_CrossTensor.m"), "context",
-                  "context", 2);
+    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_CrossTensor.m"),
+                  "context", "context", 2);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut("eye"), "name", "name", 2);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 2);
@@ -1481,8 +1482,8 @@ static void c8_info_helper(const mxArray **c8_info)
   sf_mex_addfield(*c8_info, sf_mex_duplicatearraysafe(&c8_lhs19), "lhs", "lhs",
                   19);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg/Documents/MATLAB/fn_CrossTensor.m"), "context",
-                  "context", 20);
+    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_CrossTensor.m"),
+                  "context", "context", 20);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut("eml_mtimes_helper"), "name",
                   "name", 20);
   sf_mex_addfield(*c8_info, c8_emlrt_marshallOut(""), "dominantType",
@@ -2438,14 +2439,14 @@ static void chart_debug_initialization(SimStruct *S, unsigned int
         _SFD_CV_INIT_EML(0,1,1,0,0,0,0,0,0,0,0);
         _SFD_CV_INIT_EML_FCN(0,0,"eML_blk_kernel",0,-1,225);
         _SFD_CV_INIT_SCRIPT(0,1,0,0,0,1,0,0,0,0);
-        _SFD_CV_INIT_SCRIPT_FCN(0,0,"fn_CrossTensor",59,-1,448);
+        _SFD_CV_INIT_SCRIPT_FCN(0,0,"fn_CrossTensor",59,-1,457);
 
         {
-          static int caseStart[] = { 389, 220, 305 };
+          static int caseStart[] = { 423, 254, 339 };
 
-          static int caseExprEnd[] = { 398, 226, 311 };
+          static int caseExprEnd[] = { 432, 260, 345 };
 
-          _SFD_CV_INIT_SCRIPT_SWITCH(0,0,198,211,444,3,&(caseStart[0]),
+          _SFD_CV_INIT_SCRIPT_SWITCH(0,0,232,245,453,3,&(caseStart[0]),
             &(caseExprEnd[0]));
         }
 
@@ -2676,10 +2677,10 @@ static void mdlSetWorkWidths_c8_Model_01(SimStruct *S)
   }
 
   ssSetOptions(S,ssGetOptions(S)|SS_OPTION_WORKS_WITH_CODE_REUSE);
-  ssSetChecksum0(S,(852578705U));
-  ssSetChecksum1(S,(38462607U));
-  ssSetChecksum2(S,(394970416U));
-  ssSetChecksum3(S,(2322195458U));
+  ssSetChecksum0(S,(1631386465U));
+  ssSetChecksum1(S,(3803898727U));
+  ssSetChecksum2(S,(766063664U));
+  ssSetChecksum3(S,(1303678544U));
   ssSetmdlDerivatives(S, NULL);
   ssSetExplicitFCSSCtrl(S,1);
   ssSupportsMultipleExecInstances(S,1);
