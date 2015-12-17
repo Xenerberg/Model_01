@@ -21,21 +21,21 @@ q_1_0 = 0;
 q_2_0 = 0;
 q_3_0 = 0;
 %omega
-om_x_0 = 0;
-om_y_0 = 0;
-om_z_0 = 0;
+om_x_0 = 0.5;
+om_y_0 = 0.02;
+om_z_0 = -0.3;
 %Inertial parameters
 p_x_0 = p_x;
 p_y_0 = p_y;
 p_z_0 = p_z;
 %position
-r_x_0 = 0;
-r_y_0 = 0;
-r_z_0 = 0;
+r_x_0 = 2.5;
+r_y_0 = 2;
+r_z_0 = 2;
 %velocity
-r_dot_x_0 = 0;
-r_dot_y_0 = 0;
-r_dot_z_0 = 0;
+r_dot_x_0 = 0.01;
+r_dot_y_0 = 0.005;
+r_dot_z_0 = -0.01;
 
 
 %Force perterubation
@@ -64,4 +64,5 @@ n = 0.0012;
 %Simulation parameters
 t_delta = 0.01;
 
+X_a_0 = [q_1_0;q_2_0;q_3_0;q_0_0;om_x_0;om_y_0;om_z_0;p_x_0;p_y_0;p_z_0;r_x_0;r_y_0;r_z_0;r_dot_x_0;r_dot_y_0;r_dot_z_0;rho;ita];
 
