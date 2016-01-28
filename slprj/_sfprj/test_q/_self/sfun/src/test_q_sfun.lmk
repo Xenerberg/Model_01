@@ -1,0 +1,44 @@
+CC     = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcc64.exe"
+LD     = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcclnk64.exe"
+LIBCMD = "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\bin\lcclib64.exe"
+CFLAGS = -dll -noregistrylookup  -c -Zp8 -DLCC_WIN64 -DMATLAB_MEX_FILE -DMX_COMPAT_32 -nodeclspec 
+LDFLAGS = -s -dll -L"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\lib64" -entry LibMain -map sfun.map 
+LIBFLAGS = 
+
+OBJECTS = \
+	"test_q_sfun.obj"\
+	"c1_test_q.obj"\
+	"c2_test_q.obj"\
+	"c9_test_q.obj"\
+	"test_q_sfun_registry.obj"\
+	"lccstub.obj"\
+	"test_q_sfun.def"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\sf_runtime.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwblas.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmx.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmex.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmat.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libfixedpoint.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libut.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwmathutil.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libemlrt.lib"\
+	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwsl_log_load_blocks.lib"\
+	"C:\Program Files\MATLAB\R2014a\lib\win64\libippmwipt.lib"\
+
+INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg\Documents\MATLAB\Model_01\slprj\_sfprj\test_q\_self\sfun\src" 
+ 
+
+test_q_sfun.mexw64 : $(MAKEFILE) $(OBJECTS)
+	$(LD) $(LDFLAGS) -o test_q_sfun.mexw64 @test_q_sfun.lmko
+test_q_sfun.obj :	"test_q_sfun.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "test_q_sfun.c"
+c1_test_q.obj :	"c1_test_q.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c1_test_q.c"
+c2_test_q.obj :	"c2_test_q.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c2_test_q.c"
+c9_test_q.obj :	"c9_test_q.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c9_test_q.c"
+test_q_sfun_registry.obj :	"test_q_sfun_registry.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "test_q_sfun_registry.c"
+lccstub.obj :	"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"

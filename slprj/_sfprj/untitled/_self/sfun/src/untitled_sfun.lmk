@@ -7,9 +7,7 @@ LIBFLAGS =
 
 OBJECTS = \
 	"untitled_sfun.obj"\
-	"c8_untitled.obj"\
-	"c9_untitled.obj"\
-	"c10_untitled.obj"\
+	"c21_untitled.obj"\
 	"untitled_sfun_registry.obj"\
 	"lccstub.obj"\
 	"untitled_sfun.def"\
@@ -25,19 +23,15 @@ OBJECTS = \
 	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwsl_log_load_blocks.lib"\
 	"C:\Program Files\MATLAB\R2014a\lib\win64\libippmwipt.lib"\
 
-INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg-2\Documents\MATLAB\Model_01\slprj\_sfprj\untitled\_self\sfun\src" 
+INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg\Documents\MATLAB\Model_01\slprj\_sfprj\untitled\_self\sfun\src" 
  
 
 untitled_sfun.mexw64 : $(MAKEFILE) $(OBJECTS)
 	$(LD) $(LDFLAGS) -o untitled_sfun.mexw64 @untitled_sfun.lmko
 untitled_sfun.obj :	"untitled_sfun.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "untitled_sfun.c"
-c8_untitled.obj :	"c8_untitled.c"
-	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c8_untitled.c"
-c9_untitled.obj :	"c9_untitled.c"
-	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c9_untitled.c"
-c10_untitled.obj :	"c10_untitled.c"
-	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c10_untitled.c"
+c21_untitled.obj :	"c21_untitled.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c21_untitled.c"
 untitled_sfun_registry.obj :	"untitled_sfun_registry.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "untitled_sfun_registry.c"
 lccstub.obj :	"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"

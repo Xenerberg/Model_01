@@ -30,6 +30,8 @@ OBJECTS = \
 	"c21_Model_01.obj"\
 	"c22_Model_01.obj"\
 	"c23_Model_01.obj"\
+	"c24_Model_01.obj"\
+	"c25_Model_01.obj"\
 	"Model_01_sfun_registry.obj"\
 	"lccstub.obj"\
 	"Model_01_sfun.def"\
@@ -98,6 +100,10 @@ c22_Model_01.obj :	"c22_Model_01.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c22_Model_01.c"
 c23_Model_01.obj :	"c23_Model_01.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c23_Model_01.c"
+c24_Model_01.obj :	"c24_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c24_Model_01.c"
+c25_Model_01.obj :	"c25_Model_01.c"
+	$(CC) $(CFLAGS) $(INCLUDE_PATH) "c25_Model_01.c"
 Model_01_sfun_registry.obj :	"Model_01_sfun_registry.c"
 	$(CC) $(CFLAGS) $(INCLUDE_PATH) "Model_01_sfun_registry.c"
 lccstub.obj :	"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\mex\lccstub.c"
