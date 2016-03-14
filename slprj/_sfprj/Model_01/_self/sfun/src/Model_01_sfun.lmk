@@ -47,7 +47,7 @@ OBJECTS = \
 	"C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft\libmwsl_log_load_blocks.lib"\
 	"C:\Program Files\MATLAB\R2014a\lib\win64\libippmwipt.lib"\
 
-INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg-2\Documents\MATLAB\Model_01\slprj\_sfprj\Model_01\_self\sfun\src" 
+INCLUDE_PATH= -I"C:\Program Files\MATLAB\R2014a\sys\lcc64\lcc64\include64"  -I"C:\Program Files\MATLAB\R2014a\extern\include"  -I"C:\Program Files\MATLAB\R2014a\simulink\include"  -I"C:\Program Files\MATLAB\R2014a\stateflow\c\mex\include"  -I"C:\Program Files\MATLAB\R2014a\rtw\c\src"  -I"C:\Users\Iseberg\Documents\MATLAB\Model_01\slprj\_sfprj\Model_01\_self\sfun\src" 
  
 
 Model_01_sfun.mexw64 : $(MAKEFILE) $(OBJECTS)

@@ -270,7 +270,7 @@ static void c11_chartstep_c11_Model_01(SFc11_Model_01InstanceStruct
   int32_T c11_i20;
   int32_T c11_i21;
   int32_T c11_i22;
-  real_T c11_c_q_v[3];
+  real_T c11_b_rho_t_k[3];
   int32_T c11_i23;
   int32_T c11_i24;
   int32_T c11_i25;
@@ -304,9 +304,9 @@ static void c11_chartstep_c11_Model_01(SFc11_Model_01InstanceStruct
   int32_T c11_i47;
   int32_T c11_i48;
   real_T (*c11_b_Matrix_1)[63];
-  real_T (*c11_b_rho_t_k)[3];
+  real_T (*c11_c_rho_t_k)[3];
   real_T (*c11_b_q)[4];
-  c11_b_rho_t_k = (real_T (*)[3])ssGetInputPortSignal(chartInstance->S, 1);
+  c11_c_rho_t_k = (real_T (*)[3])ssGetInputPortSignal(chartInstance->S, 1);
   c11_b_Matrix_1 = (real_T (*)[63])ssGetOutputPortSignal(chartInstance->S, 1);
   c11_b_q = (real_T (*)[4])ssGetInputPortSignal(chartInstance->S, 0);
   _SFD_CC_CALL(CHART_ENTER_DURING_FUNCTION_TAG, 10U, chartInstance->c11_sfEvent);
@@ -315,7 +315,7 @@ static void c11_chartstep_c11_Model_01(SFc11_Model_01InstanceStruct
   }
 
   for (c11_i6 = 0; c11_i6 < 3; c11_i6++) {
-    c11_rho_t_k[c11_i6] = (*c11_b_rho_t_k)[c11_i6];
+    c11_rho_t_k[c11_i6] = (*c11_c_rho_t_k)[c11_i6];
   }
 
   _SFD_SYMBOL_SCOPE_PUSH_EML(0U, 10U, 10U, c11_debug_family_names,
@@ -413,10 +413,10 @@ static void c11_chartstep_c11_Model_01(SFc11_Model_01InstanceStruct
   }
 
   for (c11_i22 = 0; c11_i22 < 3; c11_i22++) {
-    c11_c_q_v[c11_i22] = c11_q_v[c11_i22];
+    c11_b_rho_t_k[c11_i22] = c11_rho_t_k[c11_i22];
   }
 
-  c11_fn_VectorToSkewSymmetricTensor(chartInstance, c11_c_q_v, c11_y);
+  c11_fn_VectorToSkewSymmetricTensor(chartInstance, c11_b_rho_t_k, c11_y);
   c11_b_eml_scalar_eg(chartInstance);
   c11_b_eml_scalar_eg(chartInstance);
   for (c11_i23 = 0; c11_i23 < 9; c11_i23++) {
@@ -577,7 +577,7 @@ static void init_script_number_translation(uint32_T c11_machineNumber, uint32_T
   (void)c11_machineNumber;
   _SFD_SCRIPT_TRANSLATION(c11_chartNumber, c11_instanceNumber, 0U,
     sf_debug_get_script_id(
-    "C:\\Users\\Iseberg-2\\Documents\\MATLAB\\Model_01\\fn_VectorToSkewSymmetricTensor.m"));
+    "C:\\Users\\Iseberg\\Documents\\MATLAB\\Model_01\\fn_VectorToSkewSymmetricTensor.m"));
 }
 
 static const mxArray *c11_sf_marshallOut(void *chartInstanceVoid, void
@@ -1011,9 +1011,9 @@ static void c11_info_helper(const mxArray **c11_info)
   sf_mex_addfield(*c11_info, c11_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 0);
   sf_mex_addfield(*c11_info, c11_emlrt_marshallOut(
-    "[E]C:/Users/Iseberg-2/Documents/MATLAB/Model_01/fn_VectorToSkewSymmetricTensor.m"),
+    "[E]C:/Users/Iseberg/Documents/MATLAB/Model_01/fn_VectorToSkewSymmetricTensor.m"),
                   "resolved", "resolved", 0);
-  sf_mex_addfield(*c11_info, c11_b_emlrt_marshallOut(1450040424U), "fileTimeLo",
+  sf_mex_addfield(*c11_info, c11_b_emlrt_marshallOut(1447321639U), "fileTimeLo",
                   "fileTimeLo", 0);
   sf_mex_addfield(*c11_info, c11_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 0);
@@ -2310,10 +2310,10 @@ extern void utFree(void*);
 
 void sf_c11_Model_01_get_check_sum(mxArray *plhs[])
 {
-  ((real_T *)mxGetPr((plhs[0])))[0] = (real_T)(524028496U);
-  ((real_T *)mxGetPr((plhs[0])))[1] = (real_T)(2372881526U);
-  ((real_T *)mxGetPr((plhs[0])))[2] = (real_T)(521254949U);
-  ((real_T *)mxGetPr((plhs[0])))[3] = (real_T)(573049994U);
+  ((real_T *)mxGetPr((plhs[0])))[0] = (real_T)(3771005040U);
+  ((real_T *)mxGetPr((plhs[0])))[1] = (real_T)(1037801553U);
+  ((real_T *)mxGetPr((plhs[0])))[2] = (real_T)(1725452173U);
+  ((real_T *)mxGetPr((plhs[0])))[3] = (real_T)(259003155U);
 }
 
 mxArray *sf_c11_Model_01_get_autoinheritance_info(void)
@@ -2325,7 +2325,7 @@ mxArray *sf_c11_Model_01_get_autoinheritance_info(void)
     autoinheritanceFields);
 
   {
-    mxArray *mxChecksum = mxCreateString("IS5kaJJMSAHNXsjGcxQjbB");
+    mxArray *mxChecksum = mxCreateString("1A2kGXil3ajIdOuMxfznmC");
     mxSetField(mxAutoinheritanceInfo,0,"checksum",mxChecksum);
   }
 
@@ -2502,7 +2502,7 @@ static void chart_debug_initialization(SimStruct *S, unsigned int
 
         /* Initialization of MATLAB Function Model Coverage */
         _SFD_CV_INIT_EML(0,1,1,0,0,0,0,0,0,0,0);
-        _SFD_CV_INIT_EML_FCN(0,0,"eML_blk_kernel",0,-1,327);
+        _SFD_CV_INIT_EML_FCN(0,0,"eML_blk_kernel",0,-1,331);
         _SFD_CV_INIT_SCRIPT(0,1,0,0,0,0,0,0,0,0);
         _SFD_CV_INIT_SCRIPT_FCN(0,0,"fn_VectorToSkewSymmetricTensor",0,-1,433);
 
@@ -2552,7 +2552,7 @@ static void chart_debug_initialization(SimStruct *S, unsigned int
 
 static const char* sf_get_instance_specialization(void)
 {
-  return "QwETwijcyK4H4WrgvmSxxG";
+  return "74d82ICkewUBm43VNX3aOE";
 }
 
 static void sf_opaque_initialize_c11_Model_01(void *chartInstanceVar)
@@ -2727,10 +2727,10 @@ static void mdlSetWorkWidths_c11_Model_01(SimStruct *S)
   }
 
   ssSetOptions(S,ssGetOptions(S)|SS_OPTION_WORKS_WITH_CODE_REUSE);
-  ssSetChecksum0(S,(3410834018U));
-  ssSetChecksum1(S,(1385172485U));
-  ssSetChecksum2(S,(4080443286U));
-  ssSetChecksum3(S,(3777171823U));
+  ssSetChecksum0(S,(956066923U));
+  ssSetChecksum1(S,(1182379606U));
+  ssSetChecksum2(S,(357254026U));
+  ssSetChecksum3(S,(113716894U));
   ssSetmdlDerivatives(S, NULL);
   ssSetExplicitFCSSCtrl(S,1);
   ssSupportsMultipleExecInstances(S,1);

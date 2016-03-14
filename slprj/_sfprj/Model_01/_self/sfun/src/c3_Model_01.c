@@ -19,8 +19,9 @@
 
 /* Variable Definitions */
 static real_T _sfTime_;
-static const char * c3_debug_family_names[12] = { "v_lambda", "A", "Gamma", "i",
-  "j", "nargin", "nargout", "omega", "t_delta", "M", "N", "Phi_r13" };
+static const char * c3_debug_family_names[13] = { "v_lambda", "A", "omega_flag",
+  "Gamma", "i", "j", "nargin", "nargout", "omega", "t_delta", "M", "N",
+  "Phi_r13" };
 
 /* Function Declarations */
 static void initialize_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance);
@@ -108,6 +109,7 @@ static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
 static void c3_eml_warning(SFc3_Model_01InstanceStruct *chartInstance);
 static void c3_b_eml_warning(SFc3_Model_01InstanceStruct *chartInstance);
 static real_T c3_mpower(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_a);
+static void c3_b_eml_switch_helper(SFc3_Model_01InstanceStruct *chartInstance);
 static void c3_inv(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
                    real_T c3_y[9]);
 static void c3_inv3x3(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
@@ -116,13 +118,15 @@ static real_T c3_norm(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9]
 static void c3_c_eml_warning(SFc3_Model_01InstanceStruct *chartInstance);
 static void c3_d_eml_warning(SFc3_Model_01InstanceStruct *chartInstance, char_T
   c3_varargin_2[14]);
+static void c3_b_mpower(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_a
+  [9], real_T c3_b, real_T c3_c[9]);
 static void c3_b_eml_scalar_eg(SFc3_Model_01InstanceStruct *chartInstance);
 static void c3_c_eml_scalar_eg(SFc3_Model_01InstanceStruct *chartInstance);
 static void c3_eml_xgemm(SFc3_Model_01InstanceStruct *chartInstance, real_T
   c3_A[9], real_T c3_B[9], real_T c3_C[9], real_T c3_b_C[9]);
-static void c3_matrix_to_scalar_power(SFc3_Model_01InstanceStruct *chartInstance,
-  real_T c3_a[9], real_T c3_b, real_T c3_c[9]);
 static void c3_b_eml_error(SFc3_Model_01InstanceStruct *chartInstance);
+static void c3_b_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
+                     creal_T c3_V[9], creal_T c3_D[9]);
 static void c3_eml_matlab_zggev(SFc3_Model_01InstanceStruct *chartInstance,
   creal_T c3_A[9], real_T *c3_info, creal_T c3_alpha1[3], creal_T c3_beta1[3],
   creal_T c3_V[9]);
@@ -137,8 +141,6 @@ static void c3_eml_matlab_ztgevc(SFc3_Model_01InstanceStruct *chartInstance,
   creal_T c3_A[9], creal_T c3_V[9], creal_T c3_b_V[9]);
 static creal_T c3_rdivide(SFc3_Model_01InstanceStruct *chartInstance, creal_T
   c3_x, creal_T c3_y);
-static real_T c3_eml_xnrm2(SFc3_Model_01InstanceStruct *chartInstance, creal_T
-  c3_x[9], int32_T c3_ix0);
 static creal_T c3_power(SFc3_Model_01InstanceStruct *chartInstance, creal_T c3_a,
   real_T c3_b);
 static void c3_eml_lusolve(SFc3_Model_01InstanceStruct *chartInstance, creal_T
@@ -320,9 +322,10 @@ static void c3_chartstep_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance)
   real_T c3_M[9];
   int32_T c3_i8;
   real_T c3_N[9];
-  uint32_T c3_debug_family_var_map[12];
+  uint32_T c3_debug_family_var_map[13];
   real_T c3_v_lambda[3];
   real_T c3_A[9];
+  real_T c3_omega_flag;
   real_T c3_Gamma[9];
   real_T c3_i;
   real_T c3_j;
@@ -338,9 +341,19 @@ static void c3_chartstep_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance)
   real_T c3_d1;
   real_T c3_d2;
   int32_T c3_i12;
+  real_T c3_x[3];
+  real_T c3_y;
+  real_T c3_scale;
+  int32_T c3_k;
+  int32_T c3_b_k;
+  real_T c3_b_x;
+  real_T c3_c_x;
+  real_T c3_absxk;
+  real_T c3_t;
+  int32_T c3_i13;
   real_T c3_b_A[9];
   real_T c3_dv1[9];
-  int32_T c3_i13;
+  int32_T c3_i14;
   int32_T c3_b_i;
   int32_T c3_b_j;
   real_T c3_a;
@@ -349,65 +362,34 @@ static void c3_chartstep_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance)
   real_T c3_ak;
   real_T c3_d_a;
   real_T c3_B;
-  real_T c3_y;
   real_T c3_b_y;
   real_T c3_c_y;
+  real_T c3_d_y;
   real_T c3_c;
-  real_T c3_x;
-  real_T c3_b_x;
-  int32_T c3_i14;
-  real_T c3_e_a[9];
-  real_T c3_b;
-  real_T c3_c_x;
   real_T c3_d_x;
-  real_T c3_b_b;
-  int32_T c3_i15;
-  real_T c3_b_c[9];
-  int32_T c3_k;
-  real_T c3_b_k;
   real_T c3_e_x;
-  real_T c3_e;
-  boolean_T c3_firstmult;
-  real_T c3_f_x;
-  real_T c3_ed2;
+  real_T c3_e_a;
+  int32_T c3_i15;
+  real_T c3_c_M[9];
+  real_T c3_b[9];
   int32_T c3_i16;
   int32_T c3_i17;
-  real_T c3_f_a[9];
+  real_T c3_b_b[9];
   int32_T c3_i18;
+  real_T c3_e_y[9];
   int32_T c3_i19;
-  real_T c3_g_a[9];
-  int32_T c3_i20;
-  real_T c3_h_a[9];
-  int32_T c3_i21;
-  real_T c3_c_c[9];
-  int32_T c3_i22;
-  int32_T c3_i23;
   real_T c3_c_b[9];
-  int32_T c3_i24;
-  int32_T c3_i25;
-  real_T c3_i_a[9];
-  int32_T c3_i26;
+  int32_T c3_i20;
   real_T c3_d_b[9];
-  int32_T c3_i27;
-  real_T c3_j_a[9];
-  real_T c3_k_a;
-  int32_T c3_i28;
-  int32_T c3_i29;
-  int32_T c3_i30;
-  int32_T c3_i31;
-  real_T c3_d_c[9];
-  int32_T c3_i32;
-  real_T c3_e_b[9];
-  int32_T c3_i33;
-  int32_T c3_i34;
+  int32_T c3_i21;
+  int32_T c3_i22;
   real_T *c3_b_t_delta;
   real_T (*c3_b_Phi_r13)[9];
   real_T (*c3_b_N)[9];
-  real_T (*c3_c_M)[9];
+  real_T (*c3_d_M)[9];
   real_T (*c3_b_omega)[3];
-  int32_T exitg1;
   c3_b_N = (real_T (*)[9])ssGetInputPortSignal(chartInstance->S, 3);
-  c3_c_M = (real_T (*)[9])ssGetInputPortSignal(chartInstance->S, 2);
+  c3_d_M = (real_T (*)[9])ssGetInputPortSignal(chartInstance->S, 2);
   c3_b_t_delta = (real_T *)ssGetInputPortSignal(chartInstance->S, 1);
   c3_b_Phi_r13 = (real_T (*)[9])ssGetOutputPortSignal(chartInstance->S, 1);
   c3_b_omega = (real_T (*)[3])ssGetInputPortSignal(chartInstance->S, 0);
@@ -419,34 +401,36 @@ static void c3_chartstep_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance)
 
   c3_t_delta = c3_hoistedGlobal;
   for (c3_i7 = 0; c3_i7 < 9; c3_i7++) {
-    c3_M[c3_i7] = (*c3_c_M)[c3_i7];
+    c3_M[c3_i7] = (*c3_d_M)[c3_i7];
   }
 
   for (c3_i8 = 0; c3_i8 < 9; c3_i8++) {
     c3_N[c3_i8] = (*c3_b_N)[c3_i8];
   }
 
-  _SFD_SYMBOL_SCOPE_PUSH_EML(0U, 12U, 12U, c3_debug_family_names,
+  _SFD_SYMBOL_SCOPE_PUSH_EML(0U, 13U, 13U, c3_debug_family_names,
     c3_debug_family_var_map);
   _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_v_lambda, 0U, c3_c_sf_marshallOut,
     c3_c_sf_marshallIn);
   _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_A, 1U, c3_sf_marshallOut,
     c3_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_Gamma, 2U, c3_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_omega_flag, 2U, c3_b_sf_marshallOut,
+    c3_b_sf_marshallIn);
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_Gamma, 3U, c3_sf_marshallOut,
     c3_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_i, 3U, c3_b_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_i, 4U, c3_b_sf_marshallOut,
     c3_b_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_j, 4U, c3_b_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_j, 5U, c3_b_sf_marshallOut,
     c3_b_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_nargin, 5U, c3_b_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_nargin, 6U, c3_b_sf_marshallOut,
     c3_b_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_nargout, 6U, c3_b_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(&c3_nargout, 7U, c3_b_sf_marshallOut,
     c3_b_sf_marshallIn);
-  _SFD_SYMBOL_SCOPE_ADD_EML(c3_omega, 7U, c3_c_sf_marshallOut);
-  _SFD_SYMBOL_SCOPE_ADD_EML(&c3_t_delta, 8U, c3_b_sf_marshallOut);
-  _SFD_SYMBOL_SCOPE_ADD_EML(c3_M, 9U, c3_sf_marshallOut);
-  _SFD_SYMBOL_SCOPE_ADD_EML(c3_N, 10U, c3_sf_marshallOut);
-  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_Phi_r13, 11U, c3_sf_marshallOut,
+  _SFD_SYMBOL_SCOPE_ADD_EML(c3_omega, 8U, c3_c_sf_marshallOut);
+  _SFD_SYMBOL_SCOPE_ADD_EML(&c3_t_delta, 9U, c3_b_sf_marshallOut);
+  _SFD_SYMBOL_SCOPE_ADD_EML(c3_M, 10U, c3_sf_marshallOut);
+  _SFD_SYMBOL_SCOPE_ADD_EML(c3_N, 11U, c3_sf_marshallOut);
+  _SFD_SYMBOL_SCOPE_ADD_EML_IMPORTABLE(c3_Phi_r13, 12U, c3_sf_marshallOut,
     c3_sf_marshallIn);
   CV_EML_FCN(0, 0);
   _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 3);
@@ -478,199 +462,133 @@ static void c3_chartstep_c3_Model_01(SFc3_Model_01InstanceStruct *chartInstance)
   c3_A[5] = c3_v_lambda[2];
   c3_A[8] = c3_d2;
   _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 6);
-  for (c3_i12 = 0; c3_i12 < 9; c3_i12++) {
-    c3_b_A[c3_i12] = c3_A[c3_i12];
-  }
-
-  c3_inv(chartInstance, c3_b_A, c3_dv1);
-  for (c3_i13 = 0; c3_i13 < 9; c3_i13++) {
-    c3_Gamma[c3_i13] = c3_dv1[c3_i13];
-  }
-
+  c3_omega_flag = 1.0;
   _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 7);
-  c3_i = 1.0;
-  c3_b_i = 0;
-  while (c3_b_i < 3) {
-    c3_i = 1.0 + (real_T)c3_b_i;
-    CV_EML_FOR(0, 1, 0, 1);
+  for (c3_i12 = 0; c3_i12 < 3; c3_i12++) {
+    c3_x[c3_i12] = c3_omega[c3_i12];
+  }
+
+  c3_b_eml_switch_helper(chartInstance);
+  c3_y = 0.0;
+  c3_realmin(chartInstance);
+  c3_scale = 2.2250738585072014E-308;
+  for (c3_k = 1; c3_k < 4; c3_k++) {
+    c3_b_k = c3_k;
+    c3_b_x = c3_x[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+      (real_T)c3_b_k), 1, 3, 1, 0) - 1];
+    c3_c_x = c3_b_x;
+    c3_absxk = muDoubleScalarAbs(c3_c_x);
+    if (c3_absxk > c3_scale) {
+      c3_t = c3_scale / c3_absxk;
+      c3_y = 1.0 + c3_y * c3_t * c3_t;
+      c3_scale = c3_absxk;
+    } else {
+      c3_t = c3_absxk / c3_scale;
+      c3_y += c3_t * c3_t;
+    }
+  }
+
+  c3_y = c3_scale * muDoubleScalarSqrt(c3_y);
+  if (CV_EML_IF(0, 1, 0, c3_y == 0.0)) {
     _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 8);
-    c3_j = 1.0;
-    c3_b_j = 0;
-    while (c3_b_j < 3) {
-      c3_j = 1.0 + (real_T)c3_b_j;
-      CV_EML_FOR(0, 1, 1, 1);
-      _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 9);
-      c3_a = c3_v_lambda[_SFD_EML_ARRAY_BOUNDS_CHECK("v_lambda", (int32_T)
-        _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 1, 0) - 1];
-      c3_b_a = c3_a;
-      c3_c_a = c3_b_a;
-      c3_eml_scalar_eg(chartInstance);
-      c3_ak = c3_c_a;
-      c3_d_a = c3_ak;
-      c3_eml_scalar_eg(chartInstance);
-      c3_B = c3_d_a;
-      c3_y = c3_B;
-      c3_b_y = c3_y;
-      c3_c_y = c3_b_y;
-      c3_c = 1.0 / c3_c_y;
-      c3_x = c3_v_lambda[_SFD_EML_ARRAY_BOUNDS_CHECK("v_lambda", (int32_T)
-        _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 1, 0) - 1] * c3_t_delta;
-      c3_b_x = c3_x;
-      c3_b_x = muDoubleScalarExp(c3_b_x);
-      for (c3_i14 = 0; c3_i14 < 9; c3_i14++) {
-        c3_e_a[c3_i14] = c3_M[c3_i14];
-      }
+    c3_omega_flag = 0.0;
+  }
 
-      c3_b = c3_i - 1.0;
-      c3_c_x = c3_b;
-      c3_d_x = c3_c_x;
-      c3_d_x = muDoubleScalarFloor(c3_d_x);
-      if (c3_d_x == c3_b) {
-        c3_b_b = c3_b;
-        c3_b_eml_scalar_eg(chartInstance);
-        if (c3_b_b == 0.0) {
-          for (c3_i15 = 0; c3_i15 < 9; c3_i15++) {
-            c3_b_c[c3_i15] = 0.0;
-          }
+  _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 10);
+  if (CV_EML_IF(0, 1, 1, c3_omega_flag == 1.0)) {
+    _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 11);
+    for (c3_i13 = 0; c3_i13 < 9; c3_i13++) {
+      c3_b_A[c3_i13] = c3_A[c3_i13];
+    }
 
-          for (c3_k = 0; c3_k < 3; c3_k++) {
-            c3_b_k = 1.0 + (real_T)c3_k;
-            c3_b_c[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK(
-                      "", c3_b_k), 1, 3, 1, 0) + 3 *
-                    (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK
-                      ("", c3_b_k), 1, 3, 2, 0) - 1)) - 1] = 1.0;
-          }
-        } else {
-          c3_e_x = c3_b_b;
-          c3_e = muDoubleScalarAbs(c3_e_x);
-          c3_firstmult = true;
-          do {
-            exitg1 = 0;
-            c3_f_x = c3_e / 2.0;
-            c3_ed2 = c3_f_x;
-            c3_ed2 = muDoubleScalarFloor(c3_ed2);
-            if (2.0 * c3_ed2 != c3_e) {
-              if (c3_firstmult) {
-                for (c3_i16 = 0; c3_i16 < 9; c3_i16++) {
-                  c3_b_c[c3_i16] = c3_e_a[c3_i16];
-                }
+    c3_inv(chartInstance, c3_b_A, c3_dv1);
+    for (c3_i14 = 0; c3_i14 < 9; c3_i14++) {
+      c3_Gamma[c3_i14] = c3_dv1[c3_i14];
+    }
 
-                c3_firstmult = false;
-              } else {
-                for (c3_i17 = 0; c3_i17 < 9; c3_i17++) {
-                  c3_f_a[c3_i17] = c3_b_c[c3_i17];
-                }
-
-                c3_c_eml_scalar_eg(chartInstance);
-                c3_c_eml_scalar_eg(chartInstance);
-                for (c3_i18 = 0; c3_i18 < 9; c3_i18++) {
-                  c3_b_c[c3_i18] = 0.0;
-                }
-
-                for (c3_i19 = 0; c3_i19 < 9; c3_i19++) {
-                  c3_g_a[c3_i19] = c3_f_a[c3_i19];
-                }
-
-                for (c3_i20 = 0; c3_i20 < 9; c3_i20++) {
-                  c3_h_a[c3_i20] = c3_e_a[c3_i20];
-                }
-
-                c3_b_eml_xgemm(chartInstance, c3_g_a, c3_h_a, c3_b_c);
-              }
-            }
-
-            if (c3_ed2 == 0.0) {
-              exitg1 = 1;
-            } else {
-              c3_e = c3_ed2;
-              for (c3_i22 = 0; c3_i22 < 9; c3_i22++) {
-                c3_f_a[c3_i22] = c3_e_a[c3_i22];
-              }
-
-              for (c3_i23 = 0; c3_i23 < 9; c3_i23++) {
-                c3_c_b[c3_i23] = c3_e_a[c3_i23];
-              }
-
-              c3_c_eml_scalar_eg(chartInstance);
-              c3_c_eml_scalar_eg(chartInstance);
-              for (c3_i24 = 0; c3_i24 < 9; c3_i24++) {
-                c3_e_a[c3_i24] = 0.0;
-              }
-
-              for (c3_i25 = 0; c3_i25 < 9; c3_i25++) {
-                c3_i_a[c3_i25] = c3_f_a[c3_i25];
-              }
-
-              for (c3_i26 = 0; c3_i26 < 9; c3_i26++) {
-                c3_d_b[c3_i26] = c3_c_b[c3_i26];
-              }
-
-              c3_b_eml_xgemm(chartInstance, c3_i_a, c3_d_b, c3_e_a);
-            }
-          } while (exitg1 == 0);
-
-          if (c3_b_b < 0.0) {
-            for (c3_i21 = 0; c3_i21 < 9; c3_i21++) {
-              c3_c_c[c3_i21] = c3_b_c[c3_i21];
-            }
-
-            c3_inv(chartInstance, c3_c_c, c3_b_c);
-          }
-        }
-      } else {
-        for (c3_i27 = 0; c3_i27 < 9; c3_i27++) {
-          c3_j_a[c3_i27] = c3_e_a[c3_i27];
+    _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 12);
+    c3_i = 1.0;
+    c3_b_i = 0;
+    while (c3_b_i < 3) {
+      c3_i = 1.0 + (real_T)c3_b_i;
+      CV_EML_FOR(0, 1, 0, 1);
+      _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 13);
+      c3_j = 1.0;
+      c3_b_j = 0;
+      while (c3_b_j < 3) {
+        c3_j = 1.0 + (real_T)c3_b_j;
+        CV_EML_FOR(0, 1, 1, 1);
+        _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, 14);
+        c3_a = c3_v_lambda[_SFD_EML_ARRAY_BOUNDS_CHECK("v_lambda", (int32_T)
+          _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 1, 0) - 1];
+        c3_b_a = c3_a;
+        c3_c_a = c3_b_a;
+        c3_eml_scalar_eg(chartInstance);
+        c3_ak = c3_c_a;
+        c3_d_a = c3_ak;
+        c3_eml_scalar_eg(chartInstance);
+        c3_B = c3_d_a;
+        c3_b_y = c3_B;
+        c3_c_y = c3_b_y;
+        c3_d_y = c3_c_y;
+        c3_c = 1.0 / c3_d_y;
+        c3_d_x = c3_v_lambda[_SFD_EML_ARRAY_BOUNDS_CHECK("v_lambda", (int32_T)
+          _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 1, 0) - 1] * c3_t_delta;
+        c3_e_x = c3_d_x;
+        c3_e_x = muDoubleScalarExp(c3_e_x);
+        c3_e_a = c3_Gamma[(_SFD_EML_ARRAY_BOUNDS_CHECK("Gamma", (int32_T)
+          _SFD_INTEGER_CHECK("i", c3_i), 1, 3, 1, 0) + 3 *
+                           (_SFD_EML_ARRAY_BOUNDS_CHECK("Gamma", (int32_T)
+          _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 2, 0) - 1)) - 1] * c3_c * (c3_e_x
+          - 1.0);
+        for (c3_i15 = 0; c3_i15 < 9; c3_i15++) {
+          c3_c_M[c3_i15] = c3_M[c3_i15];
         }
 
-        c3_matrix_to_scalar_power(chartInstance, c3_j_a, c3_b, c3_b_c);
+        c3_b_mpower(chartInstance, c3_c_M, c3_i - 1.0, c3_b);
+        for (c3_i16 = 0; c3_i16 < 9; c3_i16++) {
+          c3_b[c3_i16] *= c3_e_a;
+        }
+
+        for (c3_i17 = 0; c3_i17 < 9; c3_i17++) {
+          c3_b_b[c3_i17] = c3_N[c3_i17];
+        }
+
+        c3_c_eml_scalar_eg(chartInstance);
+        c3_c_eml_scalar_eg(chartInstance);
+        for (c3_i18 = 0; c3_i18 < 9; c3_i18++) {
+          c3_e_y[c3_i18] = 0.0;
+        }
+
+        for (c3_i19 = 0; c3_i19 < 9; c3_i19++) {
+          c3_c_b[c3_i19] = c3_b[c3_i19];
+        }
+
+        for (c3_i20 = 0; c3_i20 < 9; c3_i20++) {
+          c3_d_b[c3_i20] = c3_b_b[c3_i20];
+        }
+
+        c3_b_eml_xgemm(chartInstance, c3_c_b, c3_d_b, c3_e_y);
+        for (c3_i21 = 0; c3_i21 < 9; c3_i21++) {
+          c3_Phi_r13[c3_i21] += c3_e_y[c3_i21];
+        }
+
+        c3_b_j++;
+        _SF_MEX_LISTEN_FOR_CTRL_C(chartInstance->S);
       }
 
-      c3_k_a = c3_Gamma[(_SFD_EML_ARRAY_BOUNDS_CHECK("Gamma", (int32_T)
-        _SFD_INTEGER_CHECK("i", c3_i), 1, 3, 1, 0) + 3 *
-                         (_SFD_EML_ARRAY_BOUNDS_CHECK("Gamma", (int32_T)
-        _SFD_INTEGER_CHECK("j", c3_j), 1, 3, 2, 0) - 1)) - 1] * c3_c * (c3_b_x -
-        1.0);
-      for (c3_i28 = 0; c3_i28 < 9; c3_i28++) {
-        c3_b_c[c3_i28] *= c3_k_a;
-      }
-
-      for (c3_i29 = 0; c3_i29 < 9; c3_i29++) {
-        c3_c_b[c3_i29] = c3_N[c3_i29];
-      }
-
-      c3_c_eml_scalar_eg(chartInstance);
-      c3_c_eml_scalar_eg(chartInstance);
-      for (c3_i30 = 0; c3_i30 < 9; c3_i30++) {
-        c3_f_a[c3_i30] = 0.0;
-      }
-
-      for (c3_i31 = 0; c3_i31 < 9; c3_i31++) {
-        c3_d_c[c3_i31] = c3_b_c[c3_i31];
-      }
-
-      for (c3_i32 = 0; c3_i32 < 9; c3_i32++) {
-        c3_e_b[c3_i32] = c3_c_b[c3_i32];
-      }
-
-      c3_b_eml_xgemm(chartInstance, c3_d_c, c3_e_b, c3_f_a);
-      for (c3_i33 = 0; c3_i33 < 9; c3_i33++) {
-        c3_Phi_r13[c3_i33] += c3_f_a[c3_i33];
-      }
-
-      c3_b_j++;
+      CV_EML_FOR(0, 1, 1, 0);
+      c3_b_i++;
       _SF_MEX_LISTEN_FOR_CTRL_C(chartInstance->S);
     }
 
-    CV_EML_FOR(0, 1, 1, 0);
-    c3_b_i++;
-    _SF_MEX_LISTEN_FOR_CTRL_C(chartInstance->S);
+    CV_EML_FOR(0, 1, 0, 0);
   }
 
-  CV_EML_FOR(0, 1, 0, 0);
-  _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, -9);
+  _SFD_EML_CALL(0U, chartInstance->c3_sfEvent, -14);
   _SFD_SYMBOL_SCOPE_POP();
-  for (c3_i34 = 0; c3_i34 < 9; c3_i34++) {
-    (*c3_b_Phi_r13)[c3_i34] = c3_Phi_r13[c3_i34];
+  for (c3_i22 = 0; c3_i22 < 9; c3_i22++) {
+    (*c3_b_Phi_r13)[c3_i22] = c3_Phi_r13[c3_i22];
   }
 
   _SFD_CC_CALL(EXIT_OUT_OF_FUNCTION_TAG, 2U, chartInstance->c3_sfEvent);
@@ -692,34 +610,34 @@ static void init_script_number_translation(uint32_T c3_machineNumber, uint32_T
 static const mxArray *c3_sf_marshallOut(void *chartInstanceVoid, void *c3_inData)
 {
   const mxArray *c3_mxArrayOutData = NULL;
-  int32_T c3_i35;
-  int32_T c3_i36;
-  int32_T c3_i37;
+  int32_T c3_i23;
+  int32_T c3_i24;
+  int32_T c3_i25;
   real_T c3_b_inData[9];
-  int32_T c3_i38;
-  int32_T c3_i39;
-  int32_T c3_i40;
+  int32_T c3_i26;
+  int32_T c3_i27;
+  int32_T c3_i28;
   real_T c3_u[9];
   const mxArray *c3_y = NULL;
   SFc3_Model_01InstanceStruct *chartInstance;
   chartInstance = (SFc3_Model_01InstanceStruct *)chartInstanceVoid;
   c3_mxArrayOutData = NULL;
-  c3_i35 = 0;
-  for (c3_i36 = 0; c3_i36 < 3; c3_i36++) {
-    for (c3_i37 = 0; c3_i37 < 3; c3_i37++) {
-      c3_b_inData[c3_i37 + c3_i35] = (*(real_T (*)[9])c3_inData)[c3_i37 + c3_i35];
+  c3_i23 = 0;
+  for (c3_i24 = 0; c3_i24 < 3; c3_i24++) {
+    for (c3_i25 = 0; c3_i25 < 3; c3_i25++) {
+      c3_b_inData[c3_i25 + c3_i23] = (*(real_T (*)[9])c3_inData)[c3_i25 + c3_i23];
     }
 
-    c3_i35 += 3;
+    c3_i23 += 3;
   }
 
-  c3_i38 = 0;
-  for (c3_i39 = 0; c3_i39 < 3; c3_i39++) {
-    for (c3_i40 = 0; c3_i40 < 3; c3_i40++) {
-      c3_u[c3_i40 + c3_i38] = c3_b_inData[c3_i40 + c3_i38];
+  c3_i26 = 0;
+  for (c3_i27 = 0; c3_i27 < 3; c3_i27++) {
+    for (c3_i28 = 0; c3_i28 < 3; c3_i28++) {
+      c3_u[c3_i28 + c3_i26] = c3_b_inData[c3_i28 + c3_i26];
     }
 
-    c3_i38 += 3;
+    c3_i26 += 3;
   }
 
   c3_y = NULL;
@@ -742,11 +660,11 @@ static void c3_b_emlrt_marshallIn(SFc3_Model_01InstanceStruct *chartInstance,
   const mxArray *c3_u, const emlrtMsgIdentifier *c3_parentId, real_T c3_y[9])
 {
   real_T c3_dv2[9];
-  int32_T c3_i41;
+  int32_T c3_i29;
   (void)chartInstance;
   sf_mex_import(c3_parentId, sf_mex_dup(c3_u), c3_dv2, 1, 0, 0U, 1, 0U, 2, 3, 3);
-  for (c3_i41 = 0; c3_i41 < 9; c3_i41++) {
-    c3_y[c3_i41] = c3_dv2[c3_i41];
+  for (c3_i29 = 0; c3_i29 < 9; c3_i29++) {
+    c3_y[c3_i29] = c3_dv2[c3_i29];
   }
 
   sf_mex_destroy(&c3_u);
@@ -759,9 +677,9 @@ static void c3_sf_marshallIn(void *chartInstanceVoid, const mxArray
   const char_T *c3_identifier;
   emlrtMsgIdentifier c3_thisId;
   real_T c3_y[9];
-  int32_T c3_i42;
-  int32_T c3_i43;
-  int32_T c3_i44;
+  int32_T c3_i30;
+  int32_T c3_i31;
+  int32_T c3_i32;
   SFc3_Model_01InstanceStruct *chartInstance;
   chartInstance = (SFc3_Model_01InstanceStruct *)chartInstanceVoid;
   c3_Phi_r13 = sf_mex_dup(c3_mxArrayInData);
@@ -770,13 +688,13 @@ static void c3_sf_marshallIn(void *chartInstanceVoid, const mxArray
   c3_thisId.fParent = NULL;
   c3_b_emlrt_marshallIn(chartInstance, sf_mex_dup(c3_Phi_r13), &c3_thisId, c3_y);
   sf_mex_destroy(&c3_Phi_r13);
-  c3_i42 = 0;
-  for (c3_i43 = 0; c3_i43 < 3; c3_i43++) {
-    for (c3_i44 = 0; c3_i44 < 3; c3_i44++) {
-      (*(real_T (*)[9])c3_outData)[c3_i44 + c3_i42] = c3_y[c3_i44 + c3_i42];
+  c3_i30 = 0;
+  for (c3_i31 = 0; c3_i31 < 3; c3_i31++) {
+    for (c3_i32 = 0; c3_i32 < 3; c3_i32++) {
+      (*(real_T (*)[9])c3_outData)[c3_i32 + c3_i30] = c3_y[c3_i32 + c3_i30];
     }
 
-    c3_i42 += 3;
+    c3_i30 += 3;
   }
 
   sf_mex_destroy(&c3_mxArrayInData);
@@ -802,20 +720,20 @@ static const mxArray *c3_c_sf_marshallOut(void *chartInstanceVoid, void
   *c3_inData)
 {
   const mxArray *c3_mxArrayOutData = NULL;
-  int32_T c3_i45;
+  int32_T c3_i33;
   real_T c3_b_inData[3];
-  int32_T c3_i46;
+  int32_T c3_i34;
   real_T c3_u[3];
   const mxArray *c3_y = NULL;
   SFc3_Model_01InstanceStruct *chartInstance;
   chartInstance = (SFc3_Model_01InstanceStruct *)chartInstanceVoid;
   c3_mxArrayOutData = NULL;
-  for (c3_i45 = 0; c3_i45 < 3; c3_i45++) {
-    c3_b_inData[c3_i45] = (*(real_T (*)[3])c3_inData)[c3_i45];
+  for (c3_i33 = 0; c3_i33 < 3; c3_i33++) {
+    c3_b_inData[c3_i33] = (*(real_T (*)[3])c3_inData)[c3_i33];
   }
 
-  for (c3_i46 = 0; c3_i46 < 3; c3_i46++) {
-    c3_u[c3_i46] = c3_b_inData[c3_i46];
+  for (c3_i34 = 0; c3_i34 < 3; c3_i34++) {
+    c3_u[c3_i34] = c3_b_inData[c3_i34];
   }
 
   c3_y = NULL;
@@ -859,11 +777,11 @@ static void c3_d_emlrt_marshallIn(SFc3_Model_01InstanceStruct *chartInstance,
   const mxArray *c3_u, const emlrtMsgIdentifier *c3_parentId, real_T c3_y[3])
 {
   real_T c3_dv3[3];
-  int32_T c3_i47;
+  int32_T c3_i35;
   (void)chartInstance;
   sf_mex_import(c3_parentId, sf_mex_dup(c3_u), c3_dv3, 1, 0, 0U, 1, 0U, 1, 3);
-  for (c3_i47 = 0; c3_i47 < 3; c3_i47++) {
-    c3_y[c3_i47] = c3_dv3[c3_i47];
+  for (c3_i35 = 0; c3_i35 < 3; c3_i35++) {
+    c3_y[c3_i35] = c3_dv3[c3_i35];
   }
 
   sf_mex_destroy(&c3_u);
@@ -876,7 +794,7 @@ static void c3_c_sf_marshallIn(void *chartInstanceVoid, const mxArray
   const char_T *c3_identifier;
   emlrtMsgIdentifier c3_thisId;
   real_T c3_y[3];
-  int32_T c3_i48;
+  int32_T c3_i36;
   SFc3_Model_01InstanceStruct *chartInstance;
   chartInstance = (SFc3_Model_01InstanceStruct *)chartInstanceVoid;
   c3_v_lambda = sf_mex_dup(c3_mxArrayInData);
@@ -885,8 +803,8 @@ static void c3_c_sf_marshallIn(void *chartInstanceVoid, const mxArray
   c3_thisId.fParent = NULL;
   c3_d_emlrt_marshallIn(chartInstance, sf_mex_dup(c3_v_lambda), &c3_thisId, c3_y);
   sf_mex_destroy(&c3_v_lambda);
-  for (c3_i48 = 0; c3_i48 < 3; c3_i48++) {
-    (*(real_T (*)[3])c3_outData)[c3_i48] = c3_y[c3_i48];
+  for (c3_i36 = 0; c3_i36 < 3; c3_i36++) {
+    (*(real_T (*)[3])c3_outData)[c3_i36] = c3_y[c3_i36];
   }
 
   sf_mex_destroy(&c3_mxArrayInData);
@@ -896,7 +814,7 @@ const mxArray *sf_c3_Model_01_get_eml_resolved_functions_info(void)
 {
   const mxArray *c3_nameCaptureInfo = NULL;
   c3_nameCaptureInfo = NULL;
-  sf_mex_assign(&c3_nameCaptureInfo, sf_mex_createstruct("structure", 2, 271, 1),
+  sf_mex_assign(&c3_nameCaptureInfo, sf_mex_createstruct("structure", 2, 275, 1),
                 false);
   c3_info_helper(&c3_nameCaptureInfo);
   c3_b_info_helper(&c3_nameCaptureInfo);
@@ -5204,13 +5122,13 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs153), "lhs", "lhs",
                   153);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "context", "context", 154);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("inv"), "name", "name", 154);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("norm"), "name", "name", 154);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 154);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m"), "resolved",
                   "resolved", 154);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717468U), "fileTimeLo",
                   "fileTimeLo", 154);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 154);
@@ -5225,8 +5143,8 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs154), "lhs", "lhs",
                   154);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
-                  "context", 155);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!genpnorm"),
+                  "context", "context", 155);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
                   "name", 155);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
@@ -5249,15 +5167,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs155), "lhs", "lhs",
                   155);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
-                  "context", 156);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 156);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!genpnorm"),
+                  "context", "context", 156);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "coder.internal.isBuiltInNumeric"), "name", "name", 156);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 156);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
-                  "resolved", 156);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/isBuiltInNumeric.m"),
+                  "resolved", "resolved", 156);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363718156U), "fileTimeLo",
                   "fileTimeLo", 156);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 156);
@@ -5272,15 +5191,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs156), "lhs", "lhs",
                   156);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
-                  "context", 157);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_div"), "name", "name", 157);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!genpnorm"),
+                  "context", "context", 157);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xnrm2"), "name", "name",
+                  157);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 157);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_div.m"), "resolved",
-                  "resolved", 157);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"),
+                  "resolved", "resolved", 157);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987892U), "fileTimeLo",
                   "fileTimeLo", 157);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 157);
@@ -5295,16 +5215,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs157), "lhs", "lhs",
                   157);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"), "context",
                   "context", 158);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
-                  "name", 158);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.inline"),
+                  "name", "name", 158);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 158);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/inline.p"),
                   "resolved", "resolved", 158);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 158);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 158);
@@ -5319,15 +5239,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs158), "lhs", "lhs",
                   158);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
-                  "context", "context", 159);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("norm"), "name", "name", 159);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"), "context",
+                  "context", 159);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.xnrm2"),
+                  "name", "name", 159);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 159);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m"), "resolved",
-                  "resolved", 159);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717468U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
+                  "resolved", "resolved", 159);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 159);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 159);
@@ -5342,16 +5263,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs159), "lhs", "lhs",
                   159);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m"), "context",
-                  "context", 160);
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
+                  "context", "context", 160);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "coder.internal.isBuiltInNumeric"), "name", "name", 160);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "coder.internal.blas.use_refblas"), "name", "name", 160);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 160);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/isBuiltInNumeric.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/use_refblas.p"),
                   "resolved", "resolved", 160);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363718156U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 160);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 160);
@@ -5366,15 +5287,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs160), "lhs", "lhs",
                   160);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p!below_threshold"),
                   "context", "context", 161);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 161);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.threshold"),
+                  "name", "name", 161);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 161);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
-                  "resolved", 161);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
+                  "resolved", "resolved", 161);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 161);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 161);
@@ -5389,15 +5311,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs161), "lhs", "lhs",
                   161);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
                   "context", "context", 162);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 162);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_switch_helper"), "name",
+                  "name", 162);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 162);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
-                  "resolved", 162);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_switch_helper.m"),
+                  "resolved", "resolved", 162);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857500U), "fileTimeLo",
                   "fileTimeLo", 162);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 162);
@@ -5412,16 +5335,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs162), "lhs", "lhs",
                   162);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
                   "context", "context", 163);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_guarded_nan"), "name",
-                  "name", 163);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xnrm2"),
+                  "name", "name", 163);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 163);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_guarded_nan.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "resolved", "resolved", 163);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825976U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 163);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 163);
@@ -5436,16 +5359,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs163), "lhs", "lhs",
                   163);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "context", "context", 164);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_warning"), "name", "name",
-                  164);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmin"), "name", "name", 164);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 164);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_warning.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmin.m"), "resolved",
                   "resolved", 164);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826002U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
                   "fileTimeLo", 164);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 164);
@@ -5460,15 +5382,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs164), "lhs", "lhs",
                   164);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "context", "context", 165);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 165);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexMinus"),
+                  "name", "name", 165);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 165);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
-                  "resolved", 165);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexMinus.m"),
+                  "resolved", "resolved", 165);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
                   "fileTimeLo", 165);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 165);
@@ -5483,15 +5406,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs165), "lhs", "lhs",
                   165);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "context", "context", 166);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 166);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
-                  "dominantType", 166);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexTimes"),
+                  "name", "name", 166);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 166);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
-                  "resolved", 166);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexTimes.m"),
+                  "resolved", "resolved", 166);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
                   "fileTimeLo", 166);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 166);
@@ -5506,16 +5430,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs166), "lhs", "lhs",
                   166);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "context", "context", 167);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_flt2str"), "name", "name",
-                  167);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 167);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexPlus"),
+                  "name", "name", 167);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 167);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_flt2str.m"), "resolved",
-                  "resolved", 167);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1360285950U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexPlus.m"),
+                  "resolved", "resolved", 167);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
                   "fileTimeLo", 167);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 167);
@@ -5530,15 +5454,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs167), "lhs", "lhs",
                   167);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_flt2str.m"), "context",
-                  "context", 168);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "name", "name", 168);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+                  "context", "context", 168);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 168);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 168);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/strfun/char.m"), "resolved",
-                  "resolved", 168);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1319737168U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+                  "resolved", "resolved", 168);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 168);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 168);
@@ -5553,20 +5478,19 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs168), "lhs", "lhs",
                   168);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
                   "context", "context", 169);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
-                  169);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 169);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 169);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
                   "resolved", 169);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 169);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 169);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
                   "mFileTimeLo", 169);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 169);
@@ -5577,13 +5501,13 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs169), "lhs", "lhs",
                   169);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "context", "context", 170);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("exp"), "name", "name", 170);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("inv"), "name", "name", 170);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 170);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/exp.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m"), "resolved",
                   "resolved", 170);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837580U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
                   "fileTimeLo", 170);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 170);
@@ -5598,16 +5522,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs170), "lhs", "lhs",
                   170);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/exp.m"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
                   "context", 171);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_exp"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
                   "name", 171);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 171);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_exp.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
                   "resolved", "resolved", 171);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1301335664U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 171);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 171);
@@ -5622,16 +5546,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs171), "lhs", "lhs",
                   171);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
                   "context", 172);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
-                  "name", 172);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 172);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 172);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
-                  "resolved", "resolved", 172);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+                  "resolved", 172);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 172);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 172);
@@ -5646,14 +5569,13 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs172), "lhs", "lhs",
                   172);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
-                  "context", "context", 173);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
-                  "name", 173);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
+                  "context", 173);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_div"), "name", "name", 173);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 173);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_div.m"), "resolved",
                   "resolved", 173);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 173);
@@ -5670,16 +5592,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs173), "lhs", "lhs",
                   173);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
-                  "context", "context", 174);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!inv3x3"), "context",
+                  "context", 174);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
                   "name", 174);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 174);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
                   "resolved", "resolved", 174);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 174);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 174);
@@ -5694,16 +5616,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs174), "lhs", "lhs",
                   174);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
                   "context", "context", 175);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
-                  "name", 175);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("norm"), "name", "name", 175);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 175);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
-                  "resolved", "resolved", 175);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m"), "resolved",
+                  "resolved", 175);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717468U), "fileTimeLo",
                   "fileTimeLo", 175);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 175);
@@ -5718,16 +5639,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs175), "lhs", "lhs",
                   175);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
-                  "context", "context", 176);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
-                  "name", 176);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m"), "context",
+                  "context", 176);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "coder.internal.isBuiltInNumeric"), "name", "name", 176);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 176);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/isBuiltInNumeric.m"),
                   "resolved", "resolved", 176);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363718156U), "fileTimeLo",
                   "fileTimeLo", 176);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 176);
@@ -5742,16 +5663,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs176), "lhs", "lhs",
                   176);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
                   "context", "context", 177);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
-                  "name", 177);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 177);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 177);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
-                  "resolved", "resolved", 177);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+                  "resolved", 177);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 177);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 177);
@@ -5766,16 +5686,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs177), "lhs", "lhs",
                   177);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
                   "context", "context", 178);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
-                  "name", 178);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 178);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 178);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
                   "resolved", 178);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
                   "fileTimeLo", 178);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 178);
@@ -5790,16 +5709,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs178), "lhs", "lhs",
                   178);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/norm.m!mat1norm"),
                   "context", "context", 179);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xgemm"), "name", "name",
-                  179);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_guarded_nan"), "name",
+                  "name", 179);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 179);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_guarded_nan.m"),
                   "resolved", "resolved", 179);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987890U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825976U), "fileTimeLo",
                   "fileTimeLo", 179);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 179);
@@ -5814,16 +5733,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs179), "lhs", "lhs",
                   179);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"), "context",
-                  "context", 180);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.inline"),
-                  "name", "name", 180);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+                  "context", "context", 180);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_warning"), "name", "name",
+                  180);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 180);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/inline.p"),
-                  "resolved", "resolved", 180);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_warning.m"), "resolved",
+                  "resolved", 180);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826002U), "fileTimeLo",
                   "fileTimeLo", 180);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 180);
@@ -5838,16 +5757,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs180), "lhs", "lhs",
                   180);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"), "context",
-                  "context", 181);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.xgemm"),
-                  "name", "name", 181);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
+                  "context", "context", 181);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 181);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 181);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
-                  "resolved", "resolved", 181);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
+                  "resolved", 181);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
                   "fileTimeLo", 181);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 181);
@@ -5862,16 +5780,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs181), "lhs", "lhs",
                   181);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
                   "context", "context", 182);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "coder.internal.blas.use_refblas"), "name", "name", 182);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 182);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 182);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/use_refblas.p"),
-                  "resolved", "resolved", 182);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
+                  "resolved", 182);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
                   "fileTimeLo", 182);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 182);
@@ -5886,16 +5803,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs182), "lhs", "lhs",
                   182);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p!below_threshold"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m!checkcond"),
                   "context", "context", 183);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.threshold"),
-                  "name", "name", 183);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_flt2str"), "name", "name",
+                  183);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 183);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
-                  "resolved", "resolved", 183);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_flt2str.m"), "resolved",
+                  "resolved", 183);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1360285950U), "fileTimeLo",
                   "fileTimeLo", 183);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 183);
@@ -5910,16 +5827,15 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs183), "lhs", "lhs",
                   183);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
-                  "context", "context", 184);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_switch_helper"), "name",
-                  "name", 184);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_flt2str.m"), "context",
+                  "context", 184);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "name", "name", 184);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 184);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_switch_helper.m"),
-                  "resolved", "resolved", 184);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857500U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/strfun/char.m"), "resolved",
+                  "resolved", 184);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1319737168U), "fileTimeLo",
                   "fileTimeLo", 184);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 184);
@@ -5934,20 +5850,20 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs184), "lhs", "lhs",
                   184);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
                   "context", "context", 185);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.scalarEg"),
-                  "name", "name", 185);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
+                  185);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 185);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/scalarEg.p"),
-                  "resolved", "resolved", 185);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311520U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+                  "resolved", 185);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
                   "fileTimeLo", 185);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 185);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
                   "mFileTimeLo", 185);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 185);
@@ -5957,17 +5873,14 @@ static void c3_c_info_helper(const mxArray **c3_info)
                   185);
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs185), "lhs", "lhs",
                   185);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
-                  "context", "context", 186);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xgemm"),
-                  "name", "name", 186);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "context", "context", 186);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("exp"), "name", "name", 186);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 186);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xgemm.p"),
-                  "resolved", "resolved", 186);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/exp.m"), "resolved",
+                  "resolved", 186);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837580U), "fileTimeLo",
                   "fileTimeLo", 186);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 186);
@@ -5982,15 +5895,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs186), "lhs", "lhs",
                   186);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
-                  "context", "context", 187);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("inv"), "name", "name", 187);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/exp.m"), "context",
+                  "context", 187);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_exp"), "name",
+                  "name", 187);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 187);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m"), "resolved",
-                  "resolved", 187);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_exp.m"),
+                  "resolved", "resolved", 187);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1301335664U), "fileTimeLo",
                   "fileTimeLo", 187);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 187);
@@ -6005,16 +5919,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs187), "lhs", "lhs",
                   187);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
-                  "context", "context", 188);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m"), "context",
+                  "context", 188);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
                   "name", 188);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 188);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
-                  "resolved", 188);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
+                  "resolved", "resolved", 188);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
                   "fileTimeLo", 188);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 188);
@@ -6029,16 +5943,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs188), "lhs", "lhs",
                   188);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
                   "context", "context", 189);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_error"), "name", "name",
-                  189);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
+                  "name", 189);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 189);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_error.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
                   "resolved", 189);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837558U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 189);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 189);
@@ -6053,15 +5967,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs189), "lhs", "lhs",
                   189);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
                   "context", "context", 190);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eig"), "name", "name", 190);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
+                  "name", 190);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 190);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/eig.m"), "resolved",
-                  "resolved", 190);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
+                  "resolved", "resolved", 190);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
                   "fileTimeLo", 190);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 190);
@@ -6076,16 +5991,16 @@ static void c3_c_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs190), "lhs", "lhs",
                   190);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
                   "context", "context", 191);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
                   "name", 191);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 191);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
                   "resolved", "resolved", 191);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
                   "fileTimeLo", 191);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 191);
@@ -6360,15 +6275,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   const mxArray *c3_rhs255 = NULL;
   const mxArray *c3_lhs255 = NULL;
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zgghrd.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
                   "context", "context", 192);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eye"), "name", "name", 192);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
+                  "name", 192);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 192);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "resolved",
-                  "resolved", 192);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857498U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+                  "resolved", "resolved", 192);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
                   "fileTimeLo", 192);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 192);
@@ -6383,16 +6299,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs192), "lhs", "lhs",
                   192);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
-                  "context", 193);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_assert_valid_size_arg"),
-                  "name", "name", 193);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 193);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+                  "context", "context", 193);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+                  "name", 193);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 193);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
                   "resolved", "resolved", 193);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1368190230U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 193);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 193);
@@ -6407,16 +6323,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs193), "lhs", "lhs",
                   193);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
                   "context", "context", 194);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
+                  "name", 194);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+                  "dominantType", 194);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "coder.internal.isBuiltInNumeric"), "name", "name", 194);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 194);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/isBuiltInNumeric.m"),
-                  "resolved", "resolved", 194);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363718156U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+                  "resolved", 194);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 194);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 194);
@@ -6431,16 +6347,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs194), "lhs", "lhs",
                   194);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
                   "context", "context", 195);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_is_integer_class"), "name",
-                  "name", 195);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xgemm"), "name", "name",
+                  195);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 195);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_is_integer_class.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"),
                   "resolved", "resolved", 195);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825982U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987890U), "fileTimeLo",
                   "fileTimeLo", 195);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 195);
@@ -6455,15 +6371,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs195), "lhs", "lhs",
                   195);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
-                  "context", "context", 196);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmax"), "name", "name", 196);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"), "context",
+                  "context", 196);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.inline"),
+                  "name", "name", 196);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 196);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmax.m"), "resolved",
-                  "resolved", 196);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/inline.p"),
+                  "resolved", "resolved", 196);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 196);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 196);
@@ -6478,15 +6395,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs196), "lhs", "lhs",
                   196);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
-                  "context", "context", 197);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmin"), "name", "name", 197);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xgemm.m"), "context",
+                  "context", 197);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.xgemm"),
+                  "name", "name", 197);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 197);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmin.m"), "resolved",
-                  "resolved", 197);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
+                  "resolved", "resolved", 197);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 197);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 197);
@@ -6501,16 +6419,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs197), "lhs", "lhs",
                   197);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmin.m"), "context",
-                  "context", 198);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_switch_helper"), "name",
-                  "name", 198);
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
+                  "context", "context", 198);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "coder.internal.blas.use_refblas"), "name", "name", 198);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 198);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_switch_helper.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/use_refblas.p"),
                   "resolved", "resolved", 198);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857500U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 198);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 198);
@@ -6525,16 +6443,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs198), "lhs", "lhs",
                   198);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p!below_threshold"),
                   "context", "context", 199);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
-                  "name", 199);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.threshold"),
+                  "name", "name", 199);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 199);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
                   "resolved", "resolved", 199);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 199);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 199);
@@ -6549,15 +6467,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs199), "lhs", "lhs",
                   199);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
                   "context", "context", 200);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmax"), "name", "name", 200);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.scalarEg"),
+                  "name", "name", 200);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 200);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmax.m"), "resolved",
-                  "resolved", 200);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/scalarEg.p"),
+                  "resolved", "resolved", 200);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311520U), "fileTimeLo",
                   "fileTimeLo", 200);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 200);
@@ -6572,16 +6491,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs200), "lhs", "lhs",
                   200);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
-                  "context", 201);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_is_float_class"), "name",
-                  "name", 201);
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xgemm.p"),
+                  "context", "context", 201);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xgemm"),
+                  "name", "name", 201);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 201);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_is_float_class.m"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xgemm.p"),
                   "resolved", "resolved", 201);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825982U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 201);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 201);
@@ -6596,16 +6515,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs201), "lhs", "lhs",
                   201);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
-                  "context", 202);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 202);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_integer_power"),
+                  "context", "context", 202);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("inv"), "name", "name", 202);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 202);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
-                  "resolved", "resolved", 202);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/inv.m"), "resolved",
+                  "resolved", 202);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
                   "fileTimeLo", 202);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 202);
@@ -6620,16 +6538,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs202), "lhs", "lhs",
                   202);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
                   "context", "context", 203);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_matlab_ztgevc"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
                   "name", 203);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 203);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
-                  "resolved", "resolved", 203);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826024U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+                  "resolved", 203);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 203);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 203);
@@ -6644,15 +6562,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs203), "lhs", "lhs",
                   203);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
                   "context", "context", 204);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 204);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_error"), "name", "name",
+                  204);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 204);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_error.m"), "resolved",
                   "resolved", 204);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837558U), "fileTimeLo",
                   "fileTimeLo", 204);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 204);
@@ -6667,15 +6586,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs204), "lhs", "lhs",
                   204);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
                   "context", "context", 205);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmin"), "name", "name", 205);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eig"), "name", "name", 205);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 205);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmin.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/eig.m"), "resolved",
                   "resolved", 205);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1305325200U), "fileTimeLo",
                   "fileTimeLo", 205);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 205);
@@ -6690,15 +6609,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs205), "lhs", "lhs",
                   205);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m!abs1"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
                   "context", "context", 206);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 206);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+                  "name", 206);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 206);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
-                  "resolved", 206);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+                  "resolved", "resolved", 206);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 206);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 206);
@@ -6713,16 +6633,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs206), "lhs", "lhs",
                   206);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zgghrd.m"),
                   "context", "context", 207);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
-                  "name", 207);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eye"), "name", "name", 207);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 207);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
-                  "resolved", "resolved", 207);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "resolved",
+                  "resolved", 207);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857498U), "fileTimeLo",
                   "fileTimeLo", 207);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 207);
@@ -6737,15 +6656,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs207), "lhs", "lhs",
                   207);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
-                  "context", "context", 208);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 208);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 208);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
+                  "context", 208);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_assert_valid_size_arg"),
+                  "name", "name", 208);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 208);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
-                  "resolved", 208);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
+                  "resolved", "resolved", 208);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1368190230U), "fileTimeLo",
                   "fileTimeLo", 208);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 208);
@@ -6760,20 +6680,20 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs208), "lhs", "lhs",
                   208);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
                   "context", "context", 209);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
-                  209);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 209);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
-                  "resolved", 209);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
+    "coder.internal.isBuiltInNumeric"), "name", "name", 209);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 209);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/isBuiltInNumeric.m"),
+                  "resolved", "resolved", 209);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363718156U), "fileTimeLo",
                   "fileTimeLo", 209);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 209);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
                   "mFileTimeLo", 209);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 209);
@@ -6784,16 +6704,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs209), "lhs", "lhs",
                   209);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
                   "context", "context", 210);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_matlab_zggbak"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_is_integer_class"), "name",
                   "name", 210);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 210);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_is_integer_class.m"),
                   "resolved", "resolved", 210);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826018U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825982U), "fileTimeLo",
                   "fileTimeLo", 210);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 210);
@@ -6808,16 +6728,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs210), "lhs", "lhs",
                   210);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
                   "context", "context", 211);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
-                  "name", 211);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmax"), "name", "name", 211);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 211);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
-                  "resolved", "resolved", 211);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmax.m"), "resolved",
+                  "resolved", 211);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
                   "fileTimeLo", 211);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 211);
@@ -6832,16 +6751,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs211), "lhs", "lhs",
                   211);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m!isinbounds"),
                   "context", "context", 212);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_minus"), "name",
-                  "name", 212);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 212);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmin"), "name", "name", 212);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+                  "dominantType", 212);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
-                  "resolved", "resolved", 212);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmin.m"), "resolved",
+                  "resolved", 212);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
                   "fileTimeLo", 212);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 212);
@@ -6856,16 +6774,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs212), "lhs", "lhs",
                   212);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
-                  "context", "context", 213);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 213);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmin.m"), "context",
+                  "context", 213);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_switch_helper"), "name",
+                  "name", 213);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 213);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_switch_helper.m"),
                   "resolved", "resolved", 213);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1381857500U), "fileTimeLo",
                   "fileTimeLo", 213);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 213);
@@ -6880,16 +6798,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs213), "lhs", "lhs",
                   213);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
                   "context", "context", 214);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
                   "name", 214);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 214);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 214);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
                   "resolved", "resolved", 214);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 214);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 214);
@@ -6904,15 +6822,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs214), "lhs", "lhs",
                   214);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m!abs1"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_assert_valid_size_arg.m"),
                   "context", "context", 215);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 215);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("intmax"), "name", "name", 215);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 215);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/intmax.m"), "resolved",
                   "resolved", 215);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1362265482U), "fileTimeLo",
                   "fileTimeLo", 215);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 215);
@@ -6927,16 +6845,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs215), "lhs", "lhs",
                   215);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
-                  "context", "context", 216);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
+                  "context", 216);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_is_float_class"), "name",
                   "name", 216);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 216);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_is_float_class.m"),
                   "resolved", "resolved", 216);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825982U), "fileTimeLo",
                   "fileTimeLo", 216);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 216);
@@ -6951,16 +6869,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs216), "lhs", "lhs",
                   216);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
-                  "context", "context", 217);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
-                  "name", 217);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eye.m"), "context",
+                  "context", 217);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 217);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 217);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
                   "resolved", "resolved", 217);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 217);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 217);
@@ -6975,16 +6893,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs217), "lhs", "lhs",
                   217);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
                   "context", "context", 218);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_minus"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_matlab_ztgevc"), "name",
                   "name", 218);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 218);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "resolved", "resolved", 218);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826024U), "fileTimeLo",
                   "fileTimeLo", 218);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 218);
@@ -6999,16 +6917,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs218), "lhs", "lhs",
                   218);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "context", "context", 219);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexMinus"),
-                  "name", "name", 219);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 219);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 219);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexMinus.m"),
-                  "resolved", "resolved", 219);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
+                  "resolved", 219);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
                   "fileTimeLo", 219);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 219);
@@ -7023,16 +6940,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs219), "lhs", "lhs",
                   219);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "context", "context", 220);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_times"), "name",
-                  "name", 220);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 220);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmin"), "name", "name", 220);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+                  "dominantType", 220);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_times.m"),
-                  "resolved", "resolved", 220);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmin.m"), "resolved",
+                  "resolved", 220);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
                   "fileTimeLo", 220);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 220);
@@ -7047,16 +6963,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs220), "lhs", "lhs",
                   220);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_times.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m!abs1"),
                   "context", "context", 221);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexTimes"),
-                  "name", "name", 221);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 221);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 221);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+                  "dominantType", 221);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexTimes.m"),
-                  "resolved", "resolved", 221);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+                  "resolved", 221);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 221);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 221);
@@ -7071,16 +6986,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs221), "lhs", "lhs",
                   221);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "context", "context", 222);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
                   "name", 222);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 222);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 222);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
                   "resolved", "resolved", 222);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
                   "fileTimeLo", 222);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 222);
@@ -7095,16 +7010,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs222), "lhs", "lhs",
                   222);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "context", "context", 223);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 223);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 223);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 223);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
-                  "resolved", "resolved", 223);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+                  "resolved", 223);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 223);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 223);
@@ -7119,20 +7033,20 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs223), "lhs", "lhs",
                   223);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_ztgevc.m"),
                   "context", "context", 224);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xnrm2"), "name", "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
                   224);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 224);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"),
-                  "resolved", "resolved", 224);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987892U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+                  "resolved", 224);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
                   "fileTimeLo", 224);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 224);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
                   "mFileTimeLo", 224);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 224);
@@ -7143,16 +7057,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs224), "lhs", "lhs",
                   224);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"), "context",
-                  "context", 225);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.inline"),
-                  "name", "name", 225);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
+                  "context", "context", 225);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_matlab_zggbak"), "name",
+                  "name", 225);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 225);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/inline.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
                   "resolved", "resolved", 225);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826018U), "fileTimeLo",
                   "fileTimeLo", 225);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 225);
@@ -7167,16 +7081,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs225), "lhs", "lhs",
                   225);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"), "context",
-                  "context", 226);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.xnrm2"),
-                  "name", "name", 226);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
+                  "context", "context", 226);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+                  "name", 226);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 226);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
                   "resolved", "resolved", 226);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 226);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 226);
@@ -7191,16 +7105,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs226), "lhs", "lhs",
                   226);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
                   "context", "context", 227);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_minus"), "name",
+                  "name", 227);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 227);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "coder.internal.blas.use_refblas"), "name", "name", 227);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
-                  "dominantType", 227);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/use_refblas.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
                   "resolved", "resolved", 227);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 227);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 227);
@@ -7215,16 +7129,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs227), "lhs", "lhs",
                   227);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p!below_threshold"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
                   "context", "context", 228);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.blas.threshold"),
-                  "name", "name", 228);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 228);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 228);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/threshold.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
                   "resolved", "resolved", 228);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 228);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 228);
@@ -7239,16 +7153,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs228), "lhs", "lhs",
                   228);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+blas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggbak.m"),
                   "context", "context", 229);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xnrm2"),
-                  "name", "name", 229);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 229);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
+                  "name", 229);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 229);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
                   "resolved", "resolved", 229);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 229);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 229);
@@ -7263,15 +7177,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs229), "lhs", "lhs",
                   229);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m!abs1"),
                   "context", "context", 230);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmin"), "name", "name", 230);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 230);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 230);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmin.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
                   "resolved", 230);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 230);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 230);
@@ -7286,16 +7200,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs230), "lhs", "lhs",
                   230);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/matlab/eml_matlab_zggev.m"),
                   "context", "context", 231);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexMinus"),
-                  "name", "name", 231);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
+                  "name", 231);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 231);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexMinus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
                   "resolved", "resolved", 231);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
                   "fileTimeLo", 231);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 231);
@@ -7310,16 +7224,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs231), "lhs", "lhs",
                   231);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
                   "context", "context", 232);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexTimes"),
-                  "name", "name", 232);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 232);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+                  "name", 232);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 232);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexTimes.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
                   "resolved", "resolved", 232);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 232);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 232);
@@ -7334,16 +7248,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs232), "lhs", "lhs",
                   232);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
                   "context", "context", 233);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexPlus"),
-                  "name", "name", 233);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
-                  "dominantType", "dominantType", 233);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_minus"), "name",
+                  "name", 233);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+                  "dominantType", 233);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexPlus.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
                   "resolved", "resolved", 233);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 233);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 233);
@@ -7358,16 +7272,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs233), "lhs", "lhs",
                   233);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_minus.m"),
                   "context", "context", 234);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 234);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexMinus"),
+                  "name", "name", 234);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 234);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexMinus.m"),
                   "resolved", "resolved", 234);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
                   "fileTimeLo", 234);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 234);
@@ -7382,15 +7296,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs234), "lhs", "lhs",
                   234);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xnrm2.p"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
                   "context", "context", 235);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 235);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 235);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_times"), "name",
+                  "name", 235);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 235);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
-                  "resolved", 235);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_times.m"),
+                  "resolved", "resolved", 235);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 235);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 235);
@@ -7405,20 +7320,20 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs235), "lhs", "lhs",
                   235);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_times.m"),
                   "context", "context", 236);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
-                  236);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 236);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexTimes"),
+                  "name", "name", 236);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 236);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
-                  "resolved", 236);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/shared/coder/coder/+coder/+internal/indexTimes.m"),
+                  "resolved", "resolved", 236);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372590360U), "fileTimeLo",
                   "fileTimeLo", 236);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 236);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
                   "mFileTimeLo", 236);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 236);
@@ -7429,15 +7344,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs236), "lhs", "lhs",
                   236);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/eig.m"), "context",
-                  "context", 237);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("diag"), "name", "name", 237);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
-                  "dominantType", 237);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+                  "context", "context", 237);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_plus"), "name",
+                  "name", 237);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.indexInt"),
+                  "dominantType", "dominantType", 237);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "resolved",
-                  "resolved", 237);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717454U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_plus.m"),
+                  "resolved", "resolved", 237);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1372589616U), "fileTimeLo",
                   "fileTimeLo", 237);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 237);
@@ -7452,16 +7368,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs237), "lhs", "lhs",
                   237);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
-                  "context", 238);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("ismatrix"), "name", "name",
-                  238);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+                  "context", "context", 238);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 238);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 238);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/ismatrix.m"), "resolved",
-                  "resolved", 238);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1331308458U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+                  "resolved", "resolved", 238);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 238);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 238);
@@ -7476,16 +7392,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs238), "lhs", "lhs",
                   238);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
-                  "context", 239);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
-                  "name", 239);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+                  "context", "context", 239);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xnrm2"), "name", "name",
+                  239);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 239);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xnrm2.m"),
                   "resolved", "resolved", 239);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987892U), "fileTimeLo",
                   "fileTimeLo", 239);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 239);
@@ -7500,20 +7416,20 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs239), "lhs", "lhs",
                   239);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
-                  "context", 240);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
-                  "name", 240);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/lapack/internal/eml_lapack_xgeev.m"),
+                  "context", "context", 240);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
+                  240);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 240);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
                   "resolved", 240);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
                   "fileTimeLo", 240);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 240);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
                   "mFileTimeLo", 240);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 240);
@@ -7524,16 +7440,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs240), "lhs", "lhs",
                   240);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/matfun/eig.m"), "context",
                   "context", 241);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 241);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("diag"), "name", "name", 241);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 241);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
-                  "resolved", "resolved", 241);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "resolved",
+                  "resolved", 241);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717454U), "fileTimeLo",
                   "fileTimeLo", 241);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 241);
@@ -7548,15 +7463,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs241), "lhs", "lhs",
                   241);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
-                  "context", "context", 242);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("power"), "name", "name", 242);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
+                  "context", 242);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("ismatrix"), "name", "name",
+                  242);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 242);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/ismatrix.m"), "resolved",
                   "resolved", 242);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717480U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1331308458U), "fileTimeLo",
                   "fileTimeLo", 242);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 242);
@@ -7571,16 +7487,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs242), "lhs", "lhs",
                   242);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
-                  "context", "context", 243);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("flintmax"), "name", "name",
-                  243);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
+                  "context", 243);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_index_class"), "name",
+                  "name", 243);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 243);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/flintmax.m"), "resolved",
-                  "resolved", 243);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1348199116U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_index_class.m"),
+                  "resolved", "resolved", 243);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1323174178U), "fileTimeLo",
                   "fileTimeLo", 243);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 243);
@@ -7595,16 +7511,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs243), "lhs", "lhs",
                   243);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/flintmax.m"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
                   "context", 244);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_float_model"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
                   "name", 244);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 244);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_float_model.m"),
-                  "resolved", "resolved", 244);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+                  "resolved", 244);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 244);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 244);
@@ -7619,15 +7535,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs244), "lhs", "lhs",
                   244);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
-                  "context", "context", 245);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mod"), "name", "name", 245);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/diag.m"), "context",
+                  "context", 245);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 245);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 245);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m"), "resolved",
-                  "resolved", 245);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717454U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+                  "resolved", "resolved", 245);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 245);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 245);
@@ -7642,16 +7559,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs245), "lhs", "lhs",
                   245);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
-                  "context", 246);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
-                  "name", 246);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
+                  "context", "context", 246);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("power"), "name", "name", 246);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 246);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m"), "resolved",
                   "resolved", 246);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717480U), "fileTimeLo",
                   "fileTimeLo", 246);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 246);
@@ -7666,16 +7582,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs246), "lhs", "lhs",
                   246);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
-                  "context", 247);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
-                  "name", 247);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
+                  "context", "context", 247);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("flintmax"), "name", "name",
+                  247);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 247);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
-                  "resolved", "resolved", 247);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/flintmax.m"), "resolved",
+                  "resolved", 247);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1348199116U), "fileTimeLo",
                   "fileTimeLo", 247);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 247);
@@ -7690,16 +7606,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs247), "lhs", "lhs",
                   247);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/flintmax.m"), "context",
                   "context", 248);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_round"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_float_model"), "name",
                   "name", 248);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 248);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_round.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_float_model.m"),
                   "resolved", "resolved", 248);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658438U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
                   "fileTimeLo", 248);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 248);
@@ -7714,16 +7630,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs248), "lhs", "lhs",
                   248);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
-                  "context", 249);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
-                  "name", 249);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
+                  "context", "context", 249);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mod"), "name", "name", 249);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 249);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
-                  "resolved", "resolved", 249);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m"), "resolved",
+                  "resolved", 249);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717454U), "fileTimeLo",
                   "fileTimeLo", 249);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 249);
@@ -7740,13 +7655,14 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
     "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
                   "context", 250);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 250);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
+                  "name", 250);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 250);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
                   "resolved", 250);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 250);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 250);
@@ -7761,15 +7677,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs250), "lhs", "lhs",
                   250);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
-                  "context", "context", 251);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("log"), "name", "name", 251);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
+                  "context", 251);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_floor"), "name",
+                  "name", 251);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 251);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/log.m"), "resolved",
-                  "resolved", 251);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837580U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_floor.m"),
+                  "resolved", "resolved", 251);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
                   "fileTimeLo", 251);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 251);
@@ -7784,16 +7701,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs251), "lhs", "lhs",
                   251);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/log.m"), "context",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
                   "context", 252);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_log"), "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_round"), "name",
                   "name", 252);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 252);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_round.m"),
                   "resolved", "resolved", 252);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825928U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658438U), "fileTimeLo",
                   "fileTimeLo", 252);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 252);
@@ -7808,15 +7725,16 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs252), "lhs", "lhs",
                   252);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
-                  "context", "context", 253);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmax"), "name", "name", 253);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
+                  "context", 253);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
+                  "name", 253);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 253);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmax.m"), "resolved",
-                  "resolved", 253);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
+                  "resolved", "resolved", 253);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
                   "fileTimeLo", 253);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 253);
@@ -7831,20 +7749,19 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs253), "lhs", "lhs",
                   253);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
-                  "context", "context", 254);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
-                  254);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/mod.m!floatmod"), "context",
+                  "context", 254);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eps"), "name", "name", 254);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 254);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/eps.m"), "resolved",
                   "resolved", 254);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1326731596U), "fileTimeLo",
                   "fileTimeLo", 254);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 254);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
                   "mFileTimeLo", 254);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 254);
@@ -7855,15 +7772,15 @@ static void c3_d_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs254), "lhs", "lhs",
                   254);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
                   "context", "context", 255);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 255);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("log"), "name", "name", 255);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 255);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/log.m"), "resolved",
                   "resolved", 255);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1343837580U), "fileTimeLo",
                   "fileTimeLo", 255);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 255);
@@ -8039,17 +7956,25 @@ static void c3_e_info_helper(const mxArray **c3_info)
   const mxArray *c3_lhs269 = NULL;
   const mxArray *c3_rhs270 = NULL;
   const mxArray *c3_lhs270 = NULL;
+  const mxArray *c3_rhs271 = NULL;
+  const mxArray *c3_lhs271 = NULL;
+  const mxArray *c3_rhs272 = NULL;
+  const mxArray *c3_lhs272 = NULL;
+  const mxArray *c3_rhs273 = NULL;
+  const mxArray *c3_lhs273 = NULL;
+  const mxArray *c3_rhs274 = NULL;
+  const mxArray *c3_lhs274 = NULL;
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
-                  "context", "context", 256);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_hypot"), "name",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/log.m"), "context",
+                  "context", 256);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_log"), "name",
                   "name", 256);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 256);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_hypot.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
                   "resolved", "resolved", 256);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825928U), "fileTimeLo",
                   "fileTimeLo", 256);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 256);
@@ -8066,14 +7991,13 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
     "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
                   "context", "context", 257);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_atan2"), "name",
-                  "name", 257);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("realmax"), "name", "name", 257);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
                   "dominantType", 257);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_atan2.m"),
-                  "resolved", "resolved", 257);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825920U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/realmax.m"), "resolved",
+                  "resolved", 257);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1307658442U), "fileTimeLo",
                   "fileTimeLo", 257);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 257);
@@ -8090,18 +8014,18 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
     "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
                   "context", "context", 258);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
-                  "name", 258);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
+                  258);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 258);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
-                  "resolved", "resolved", 258);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+                  "resolved", 258);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
                   "fileTimeLo", 258);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 258);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
                   "mFileTimeLo", 258);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 258);
@@ -8112,16 +8036,15 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs258), "lhs", "lhs",
                   258);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
                   "context", "context", 259);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
-                  "name", 259);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("isnan"), "name", "name", 259);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 259);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
-                  "resolved", "resolved", 259);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/isnan.m"), "resolved",
+                  "resolved", 259);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717458U), "fileTimeLo",
                   "fileTimeLo", 259);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 259);
@@ -8136,20 +8059,20 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs259), "lhs", "lhs",
                   259);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
                   "context", "context", 260);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
-                  260);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_hypot"), "name",
+                  "name", 260);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 260);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
-                  "resolved", 260);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_hypot.m"),
+                  "resolved", "resolved", 260);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825926U), "fileTimeLo",
                   "fileTimeLo", 260);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 260);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
                   "mFileTimeLo", 260);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 260);
@@ -8160,16 +8083,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs260), "lhs", "lhs",
                   260);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "context",
-                  "context", 261);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("ismatrix"), "name", "name",
-                  261);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
+                  "context", "context", 261);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_atan2"), "name",
+                  "name", 261);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 261);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/ismatrix.m"), "resolved",
-                  "resolved", 261);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1331308458U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_atan2.m"),
+                  "resolved", "resolved", 261);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825920U), "fileTimeLo",
                   "fileTimeLo", 261);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 261);
@@ -8184,16 +8107,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs261), "lhs", "lhs",
                   261);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "context",
-                  "context", 262);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_lusolve"), "name", "name",
-                  262);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_log.m"),
+                  "context", "context", 262);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_abs"), "name",
+                  "name", 262);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 262);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m"), "resolved",
-                  "resolved", 262);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/eml_scalar_abs.m"),
+                  "resolved", "resolved", 262);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286825912U), "fileTimeLo",
                   "fileTimeLo", 262);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 262);
@@ -8208,16 +8131,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs262), "lhs", "lhs",
                   262);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/power.m!scalar_float_power"),
                   "context", "context", 263);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xcabs1"), "name", "name",
-                  263);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
+                  "name", 263);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
                   "dominantType", 263);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xcabs1.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
                   "resolved", "resolved", 263);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
                   "fileTimeLo", 263);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 263);
@@ -8232,20 +8155,20 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs263), "lhs", "lhs",
                   263);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xcabs1.m"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mpower.m!matrix_to_scalar_power"),
                   "context", "context", 264);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xcabs1"),
-                  "name", "name", 264);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("mrdivide"), "name", "name",
+                  264);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 264);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xcabs1.p"),
-                  "resolved", "resolved", 264);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "resolved",
+                  "resolved", 264);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1388463696U), "fileTimeLo",
                   "fileTimeLo", 264);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 264);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "mFileTimeLo",
                   "mFileTimeLo", 264);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
                   "mFileTimeHi", 264);
@@ -8256,15 +8179,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs264), "lhs", "lhs",
                   264);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xcabs1.p"),
-                  "context", "context", 265);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 265);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "context",
+                  "context", 265);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("ismatrix"), "name", "name",
+                  265);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 265);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elmat/ismatrix.m"), "resolved",
                   "resolved", 265);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1331308458U), "fileTimeLo",
                   "fileTimeLo", 265);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 265);
@@ -8279,15 +8203,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs265), "lhs", "lhs",
                   265);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
-                  "context", "context", 266);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("rdivide"), "name", "name", 266);
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/mrdivide.p"), "context",
+                  "context", 266);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_lusolve"), "name", "name",
+                  266);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 266);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/rdivide.m"), "resolved",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m"), "resolved",
                   "resolved", 266);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717480U), "fileTimeLo",
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1370017086U), "fileTimeLo",
                   "fileTimeLo", 266);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 266);
@@ -8302,16 +8227,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs266), "lhs", "lhs",
                   266);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!warn_singular"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
                   "context", "context", 267);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_warning"), "name", "name",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_xcabs1"), "name", "name",
                   267);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 267);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_warning.m"), "resolved",
-                  "resolved", 267);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826002U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xcabs1.m"),
+                  "resolved", "resolved", 267);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
                   "fileTimeLo", 267);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 267);
@@ -8326,16 +8251,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs267), "lhs", "lhs",
                   267);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/blas/eml_xcabs1.m"),
                   "context", "context", 268);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
-                  "name", 268);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("coder.internal.refblas.xcabs1"),
+                  "name", "name", 268);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 268);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
-                  "resolved", 268);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xcabs1.p"),
+                  "resolved", "resolved", 268);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1389311522U), "fileTimeLo",
                   "fileTimeLo", 268);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 268);
@@ -8350,16 +8275,15 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs268), "lhs", "lhs",
                   268);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+    "[IXE]$matlabroot$/toolbox/coder/coder/+coder/+internal/+refblas/xcabs1.p"),
                   "context", "context", 269);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "eml_int_forloop_overflow_check"), "name", "name", 269);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("abs"), "name", "name", 269);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 269);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
-                  "resolved", "resolved", 269);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/elfun/abs.m"), "resolved",
+                  "resolved", 269);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717452U), "fileTimeLo",
                   "fileTimeLo", 269);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 269);
@@ -8373,15 +8297,16 @@ static void c3_e_info_helper(const mxArray **c3_info)
                   269);
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs269), "lhs", "lhs",
                   269);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "context", "context", 270);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
-                  "name", 270);
-  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+                  "context", "context", 270);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("rdivide"), "name", "name", 270);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
                   "dominantType", 270);
   sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
-    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
-                  "resolved", "resolved", 270);
-  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/rdivide.m"), "resolved",
+                  "resolved", 270);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1363717480U), "fileTimeLo",
                   "fileTimeLo", 270);
   sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
                   "fileTimeHi", 270);
@@ -8395,6 +8320,100 @@ static void c3_e_info_helper(const mxArray **c3_info)
                   270);
   sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs270), "lhs", "lhs",
                   270);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!warn_singular"),
+                  "context", "context", 271);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_warning"), "name", "name",
+                  271);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("char"), "dominantType",
+                  "dominantType", 271);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_warning.m"), "resolved",
+                  "resolved", 271);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1286826002U), "fileTimeLo",
+                  "fileTimeLo", 271);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
+                  "fileTimeHi", 271);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+                  "mFileTimeLo", 271);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
+                  "mFileTimeHi", 271);
+  sf_mex_assign(&c3_rhs271, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_assign(&c3_lhs271, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_rhs271), "rhs", "rhs",
+                  271);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs271), "lhs", "lhs",
+                  271);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+                  "context", "context", 272);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_scalar_eg"), "name",
+                  "name", 272);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("double"), "dominantType",
+                  "dominantType", 272);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_scalar_eg.m"), "resolved",
+                  "resolved", 272);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+                  "fileTimeLo", 272);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
+                  "fileTimeHi", 272);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+                  "mFileTimeLo", 272);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
+                  "mFileTimeHi", 272);
+  sf_mex_assign(&c3_rhs272, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_assign(&c3_lhs272, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_rhs272), "rhs", "rhs",
+                  272);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs272), "lhs", "lhs",
+                  272);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_lusolve.m!lusolve3x3"),
+                  "context", "context", 273);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "eml_int_forloop_overflow_check"), "name", "name", 273);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 273);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/eml/eml_int_forloop_overflow_check.m"),
+                  "resolved", "resolved", 273);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1375987888U), "fileTimeLo",
+                  "fileTimeLo", 273);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
+                  "fileTimeHi", 273);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+                  "mFileTimeLo", 273);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
+                  "mFileTimeHi", 273);
+  sf_mex_assign(&c3_rhs273, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_assign(&c3_lhs273, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_rhs273), "rhs", "rhs",
+                  273);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs273), "lhs", "lhs",
+                  273);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "context", "context", 274);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut("eml_mtimes_helper"), "name",
+                  "name", 274);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(""), "dominantType",
+                  "dominantType", 274);
+  sf_mex_addfield(*c3_info, c3_emlrt_marshallOut(
+    "[ILXE]$matlabroot$/toolbox/eml/lib/matlab/ops/eml_mtimes_helper.m"),
+                  "resolved", "resolved", 274);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(1383880894U), "fileTimeLo",
+                  "fileTimeLo", 274);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "fileTimeHi",
+                  "fileTimeHi", 274);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeLo",
+                  "mFileTimeLo", 274);
+  sf_mex_addfield(*c3_info, c3_b_emlrt_marshallOut(0U), "mFileTimeHi",
+                  "mFileTimeHi", 274);
+  sf_mex_assign(&c3_rhs274, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_assign(&c3_lhs274, sf_mex_createcellmatrix(0, 1), false);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_rhs274), "rhs", "rhs",
+                  274);
+  sf_mex_addfield(*c3_info, sf_mex_duplicatearraysafe(&c3_lhs274), "lhs", "lhs",
+                  274);
   sf_mex_destroy(&c3_rhs256);
   sf_mex_destroy(&c3_lhs256);
   sf_mex_destroy(&c3_rhs257);
@@ -8425,22 +8444,30 @@ static void c3_e_info_helper(const mxArray **c3_info)
   sf_mex_destroy(&c3_lhs269);
   sf_mex_destroy(&c3_rhs270);
   sf_mex_destroy(&c3_lhs270);
+  sf_mex_destroy(&c3_rhs271);
+  sf_mex_destroy(&c3_lhs271);
+  sf_mex_destroy(&c3_rhs272);
+  sf_mex_destroy(&c3_lhs272);
+  sf_mex_destroy(&c3_rhs273);
+  sf_mex_destroy(&c3_lhs273);
+  sf_mex_destroy(&c3_rhs274);
+  sf_mex_destroy(&c3_lhs274);
 }
 
 static void c3_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
                    creal_T c3_V[3])
 {
-  int32_T c3_i49;
+  int32_T c3_i37;
   static creal_T c3_dc0 = { 0.0, 0.0 };
 
   creal_T c3_b_A[9];
   real_T c3_info;
-  int32_T c3_i50;
+  int32_T c3_i38;
   creal_T c3_c_A[9];
   real_T c3_anrm;
-  int32_T c3_i51;
+  int32_T c3_i39;
   creal_T c3_alpha1[3];
-  int32_T c3_i52;
+  int32_T c3_i40;
   creal_T c3_beta1[3];
   boolean_T c3_ilascl;
   real_T c3_anrmto;
@@ -8515,39 +8542,39 @@ static void c3_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
   creal_T c3_k_b;
   creal_T c3_l_b;
   creal_T c3_m_b;
-  int32_T c3_i53;
+  int32_T c3_i41;
   creal_T c3_f_A[9];
   real_T c3_b_info;
   real_T c3_c_info;
   real_T c3_d_info;
   real_T c3_e_info;
-  int32_T c3_i54;
+  int32_T c3_i42;
   creal_T c3_b_alpha1[3];
-  int32_T c3_i55;
+  int32_T c3_i43;
   creal_T c3_b_beta1[3];
   boolean_T guard1 = false;
-  for (c3_i49 = 0; c3_i49 < 9; c3_i49++) {
-    c3_b_A[c3_i49].re = c3_A[c3_i49] + c3_dc0.re;
-    c3_b_A[c3_i49].im = c3_dc0.im;
+  for (c3_i37 = 0; c3_i37 < 9; c3_i37++) {
+    c3_b_A[c3_i37].re = c3_A[c3_i37] + c3_dc0.re;
+    c3_b_A[c3_i37].im = c3_dc0.im;
   }
 
   c3_info = 0.0;
   c3_realmin(chartInstance);
   c3_eps(chartInstance);
-  for (c3_i50 = 0; c3_i50 < 9; c3_i50++) {
-    c3_c_A[c3_i50] = c3_b_A[c3_i50];
+  for (c3_i38 = 0; c3_i38 < 9; c3_i38++) {
+    c3_c_A[c3_i38] = c3_b_A[c3_i38];
   }
 
   c3_anrm = c3_eml_matlab_zlangeM(chartInstance, c3_c_A);
   if (!c3_isfinite(chartInstance, c3_anrm)) {
-    for (c3_i51 = 0; c3_i51 < 3; c3_i51++) {
-      c3_alpha1[c3_i51].re = rtNaN;
-      c3_alpha1[c3_i51].im = 0.0;
+    for (c3_i39 = 0; c3_i39 < 3; c3_i39++) {
+      c3_alpha1[c3_i39].re = rtNaN;
+      c3_alpha1[c3_i39].im = 0.0;
     }
 
-    for (c3_i52 = 0; c3_i52 < 3; c3_i52++) {
-      c3_beta1[c3_i52].re = rtNaN;
-      c3_beta1[c3_i52].im = 0.0;
+    for (c3_i40 = 0; c3_i40 < 3; c3_i40++) {
+      c3_beta1[c3_i40].re = rtNaN;
+      c3_beta1[c3_i40].im = 0.0;
     }
   } else {
     c3_ilascl = false;
@@ -8842,8 +8869,8 @@ static void c3_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
       }
     }
 
-    for (c3_i53 = 0; c3_i53 < 9; c3_i53++) {
-      c3_f_A[c3_i53] = c3_b_A[c3_i53];
+    for (c3_i41 = 0; c3_i41 < 9; c3_i41++) {
+      c3_f_A[c3_i41] = c3_b_A[c3_i41];
     }
 
     c3_eml_matlab_zhgeqz(chartInstance, c3_f_A, c3_b_ilo, c3_b_ihi, &c3_b_info,
@@ -8860,12 +8887,12 @@ static void c3_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
   c3_c_info = c3_info;
   c3_d_info = c3_c_info;
   c3_e_info = c3_d_info;
-  for (c3_i54 = 0; c3_i54 < 3; c3_i54++) {
-    c3_b_alpha1[c3_i54] = c3_alpha1[c3_i54];
+  for (c3_i42 = 0; c3_i42 < 3; c3_i42++) {
+    c3_b_alpha1[c3_i42] = c3_alpha1[c3_i42];
   }
 
-  for (c3_i55 = 0; c3_i55 < 3; c3_i55++) {
-    c3_b_beta1[c3_i55] = c3_beta1[c3_i55];
+  for (c3_i43 = 0; c3_i43 < 3; c3_i43++) {
+    c3_b_beta1[c3_i43] = c3_beta1[c3_i43];
   }
 
   c3_b_eml_div(chartInstance, c3_b_alpha1, c3_b_beta1, c3_V);
@@ -8885,27 +8912,27 @@ static void c3_realmin(SFc3_Model_01InstanceStruct *chartInstance)
 
 static void c3_eml_error(SFc3_Model_01InstanceStruct *chartInstance)
 {
-  int32_T c3_i56;
+  int32_T c3_i44;
   static char_T c3_cv0[30] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o', 'o', 'l',
     'b', 'o', 'x', ':', 'E', 'l', 'F', 'u', 'n', 'D', 'o', 'm', 'a', 'i', 'n',
     'E', 'r', 'r', 'o', 'r' };
 
   char_T c3_u[30];
   const mxArray *c3_y = NULL;
-  int32_T c3_i57;
+  int32_T c3_i45;
   static char_T c3_cv1[4] = { 's', 'q', 'r', 't' };
 
   char_T c3_b_u[4];
   const mxArray *c3_b_y = NULL;
   (void)chartInstance;
-  for (c3_i56 = 0; c3_i56 < 30; c3_i56++) {
-    c3_u[c3_i56] = c3_cv0[c3_i56];
+  for (c3_i44 = 0; c3_i44 < 30; c3_i44++) {
+    c3_u[c3_i44] = c3_cv0[c3_i44];
   }
 
   c3_y = NULL;
   sf_mex_assign(&c3_y, sf_mex_create("y", c3_u, 10, 0U, 1U, 0U, 2, 1, 30), false);
-  for (c3_i57 = 0; c3_i57 < 4; c3_i57++) {
-    c3_b_u[c3_i57] = c3_cv1[c3_i57];
+  for (c3_i45 = 0; c3_i45 < 4; c3_i45++) {
+    c3_b_u[c3_i45] = c3_cv1[c3_i45];
   }
 
   c3_b_y = NULL;
@@ -9004,9 +9031,9 @@ static boolean_T c3_isfinite(SFc3_Model_01InstanceStruct *chartInstance, real_T
 static void c3_eml_matlab_zlascl(SFc3_Model_01InstanceStruct *chartInstance,
   real_T c3_cfrom, real_T c3_cto, creal_T c3_A[9], creal_T c3_b_A[9])
 {
-  int32_T c3_i58;
-  for (c3_i58 = 0; c3_i58 < 9; c3_i58++) {
-    c3_b_A[c3_i58] = c3_A[c3_i58];
+  int32_T c3_i46;
+  for (c3_i46 = 0; c3_i46 < 9; c3_i46++) {
+    c3_b_A[c3_i46] = c3_A[c3_i46];
   }
 
   c3_c_eml_matlab_zlascl(chartInstance, c3_cfrom, c3_cto, c3_b_A);
@@ -9024,9 +9051,9 @@ static void c3_eml_matlab_zggbal(SFc3_Model_01InstanceStruct *chartInstance,
   creal_T c3_A[9], creal_T c3_b_A[9], int32_T *c3_ilo, int32_T *c3_ihi, int32_T
   c3_rscale[3])
 {
-  int32_T c3_i59;
-  for (c3_i59 = 0; c3_i59 < 9; c3_i59++) {
-    c3_b_A[c3_i59] = c3_A[c3_i59];
+  int32_T c3_i47;
+  for (c3_i47 = 0; c3_i47 < 9; c3_i47++) {
+    c3_b_A[c3_i47] = c3_A[c3_i47];
   }
 
   c3_b_eml_matlab_zggbal(chartInstance, c3_b_A, c3_ilo, c3_ihi, c3_rscale);
@@ -9040,14 +9067,14 @@ static void c3_eml_switch_helper(SFc3_Model_01InstanceStruct *chartInstance)
 static void c3_check_forloop_overflow_error(SFc3_Model_01InstanceStruct
   *chartInstance, boolean_T c3_overflow)
 {
-  int32_T c3_i60;
+  int32_T c3_i48;
   static char_T c3_cv2[34] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o', 'o', 'l',
     'b', 'o', 'x', ':', 'i', 'n', 't', '_', 'f', 'o', 'r', 'l', 'o', 'o', 'p',
     '_', 'o', 'v', 'e', 'r', 'f', 'l', 'o', 'w' };
 
   char_T c3_u[34];
   const mxArray *c3_y = NULL;
-  int32_T c3_i61;
+  int32_T c3_i49;
   static char_T c3_cv3[23] = { 'c', 'o', 'd', 'e', 'r', '.', 'i', 'n', 't', 'e',
     'r', 'n', 'a', 'l', '.', 'i', 'n', 'd', 'e', 'x', 'I', 'n', 't' };
 
@@ -9056,15 +9083,15 @@ static void c3_check_forloop_overflow_error(SFc3_Model_01InstanceStruct
   (void)chartInstance;
   if (!c3_overflow) {
   } else {
-    for (c3_i60 = 0; c3_i60 < 34; c3_i60++) {
-      c3_u[c3_i60] = c3_cv2[c3_i60];
+    for (c3_i48 = 0; c3_i48 < 34; c3_i48++) {
+      c3_u[c3_i48] = c3_cv2[c3_i48];
     }
 
     c3_y = NULL;
     sf_mex_assign(&c3_y, sf_mex_create("y", c3_u, 10, 0U, 1U, 0U, 2, 1, 34),
                   false);
-    for (c3_i61 = 0; c3_i61 < 23; c3_i61++) {
-      c3_b_u[c3_i61] = c3_cv3[c3_i61];
+    for (c3_i49 = 0; c3_i49 < 23; c3_i49++) {
+      c3_b_u[c3_i49] = c3_cv3[c3_i49];
     }
 
     c3_b_y = NULL;
@@ -9416,16 +9443,16 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
 {
   static creal_T c3_dc2 = { 0.0, 0.0 };
 
-  int32_T c3_i62;
+  int32_T c3_i50;
   creal_T c3_b_A[9];
-  int32_T c3_i63;
-  int32_T c3_i64;
+  int32_T c3_i51;
+  int32_T c3_i52;
   static creal_T c3_dc3 = { 0.0, 0.0 };
 
   creal_T c3_eshift;
   creal_T c3_ctemp;
   creal_T c3_rho;
-  int32_T c3_i65;
+  int32_T c3_i53;
   creal_T c3_c_A[9];
   real_T c3_anorm;
   real_T c3_y;
@@ -9436,7 +9463,7 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   boolean_T c3_failed;
   int32_T c3_a;
   int32_T c3_b_a;
-  int32_T c3_i66;
+  int32_T c3_i54;
   int32_T c3_c_a;
   int32_T c3_d_a;
   boolean_T c3_overflow;
@@ -9491,8 +9518,8 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   real_T c3_g_y;
   real_T c3_h_y;
   boolean_T c3_b2;
-  int32_T c3_i67;
-  int32_T c3_i68;
+  int32_T c3_i55;
+  int32_T c3_i56;
   creal_T c3_d_A;
   creal_T c3_e_A;
   creal_T c3_s;
@@ -9631,7 +9658,7 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   int32_T c3_b_k;
   int32_T c3_pb_a;
   int32_T c3_qb_a;
-  int32_T c3_i69;
+  int32_T c3_i57;
   int32_T c3_o_b;
   int32_T c3_p_b;
   boolean_T c3_g_overflow;
@@ -9645,18 +9672,18 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   boolean_T exitg3;
   boolean_T guard11 = false;
   c3_dc2.re = rtNaN;
-  for (c3_i62 = 0; c3_i62 < 9; c3_i62++) {
-    c3_b_A[c3_i62] = c3_A[c3_i62];
+  for (c3_i50 = 0; c3_i50 < 9; c3_i50++) {
+    c3_b_A[c3_i50] = c3_A[c3_i50];
   }
 
-  for (c3_i63 = 0; c3_i63 < 3; c3_i63++) {
-    c3_alpha1[c3_i63].re = 0.0;
-    c3_alpha1[c3_i63].im = 0.0;
+  for (c3_i51 = 0; c3_i51 < 3; c3_i51++) {
+    c3_alpha1[c3_i51].re = 0.0;
+    c3_alpha1[c3_i51].im = 0.0;
   }
 
-  for (c3_i64 = 0; c3_i64 < 3; c3_i64++) {
-    c3_beta1[c3_i64].re = 1.0;
-    c3_beta1[c3_i64].im = 0.0;
+  for (c3_i52 = 0; c3_i52 < 3; c3_i52++) {
+    c3_beta1[c3_i52].re = 1.0;
+    c3_beta1[c3_i52].im = 0.0;
   }
 
   c3_eps(chartInstance);
@@ -9664,8 +9691,8 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   c3_eshift = c3_dc3;
   c3_ctemp = c3_dc3;
   c3_rho = c3_dc3;
-  for (c3_i65 = 0; c3_i65 < 9; c3_i65++) {
-    c3_c_A[c3_i65] = c3_b_A[c3_i65];
+  for (c3_i53 = 0; c3_i53 < 9; c3_i53++) {
+    c3_c_A[c3_i53] = c3_b_A[c3_i53];
   }
 
   c3_anorm = c3_eml_matlab_zlanhs(chartInstance, c3_c_A, c3_ilo, c3_ihi);
@@ -9685,8 +9712,8 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   c3_failed = true;
   c3_a = c3_ihi;
   c3_b_a = c3_a + 1;
-  c3_i66 = c3_b_a;
-  c3_c_a = c3_i66;
+  c3_i54 = c3_b_a;
+  c3_c_a = c3_i54;
   c3_d_a = c3_c_a;
   if (c3_d_a > 3) {
     c3_overflow = false;
@@ -9699,7 +9726,7 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
     c3_check_forloop_overflow_error(chartInstance, c3_overflow);
   }
 
-  for (c3_j = c3_i66; c3_j < 4; c3_j++) {
+  for (c3_j = c3_i54; c3_j < 4; c3_j++) {
     c3_b_j = c3_j;
     c3_alpha1[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
       (real_T)c3_b_j), 1, 3, 1, 0) - 1].re = c3_b_A[(_SFD_EML_ARRAY_BOUNDS_CHECK
@@ -9866,12 +9893,12 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
         }
 
         if (!c3_b2) {
-          for (c3_i67 = 0; c3_i67 < 3; c3_i67++) {
-            c3_alpha1[c3_i67] = c3_dc2;
+          for (c3_i55 = 0; c3_i55 < 3; c3_i55++) {
+            c3_alpha1[c3_i55] = c3_dc2;
           }
 
-          for (c3_i68 = 0; c3_i68 < 3; c3_i68++) {
-            c3_beta1[c3_i68] = c3_dc2;
+          for (c3_i56 = 0; c3_i56 < 3; c3_i56++) {
+            c3_beta1[c3_i56] = c3_dc2;
           }
 
           *c3_info = -1.0;
@@ -10622,8 +10649,8 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
   if (guard1 == true) {
     c3_pb_a = c3_ilo;
     c3_qb_a = c3_pb_a - 1;
-    c3_i69 = c3_qb_a;
-    c3_o_b = c3_i69;
+    c3_i57 = c3_qb_a;
+    c3_o_b = c3_i57;
     c3_p_b = c3_o_b;
     if (1 > c3_p_b) {
       c3_g_overflow = false;
@@ -10636,7 +10663,7 @@ static void c3_eml_matlab_zhgeqz(SFc3_Model_01InstanceStruct *chartInstance,
       c3_check_forloop_overflow_error(chartInstance, c3_g_overflow);
     }
 
-    for (c3_e_j = 1; c3_e_j <= c3_i69; c3_e_j++) {
+    for (c3_e_j = 1; c3_e_j <= c3_i57; c3_e_j++) {
       c3_b_j = c3_e_j;
       c3_alpha1[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
         (real_T)c3_b_j), 1, 3, 1, 0) - 1].re = c3_b_A
@@ -10678,7 +10705,7 @@ static real_T c3_eml_matlab_zlanhs(SFc3_Model_01InstanceStruct *chartInstance,
   int32_T c3_c;
   int32_T c3_x;
   int32_T c3_y;
-  int32_T c3_i70;
+  int32_T c3_i58;
   int32_T c3_e_a;
   int32_T c3_c_b;
   int32_T c3_f_a;
@@ -10728,13 +10755,13 @@ static real_T c3_eml_matlab_zlanhs(SFc3_Model_01InstanceStruct *chartInstance,
       c3_c = c3_d_a;
       c3_x = c3_c + 1;
       c3_y = c3_ihi;
-      c3_i70 = c3_x;
-      if (c3_y < c3_i70) {
-        c3_i70 = c3_y;
+      c3_i58 = c3_x;
+      if (c3_y < c3_i58) {
+        c3_i58 = c3_y;
       }
 
       c3_e_a = c3_c_ilo;
-      c3_c_b = c3_i70;
+      c3_c_b = c3_i58;
       c3_f_a = c3_e_a;
       c3_d_b = c3_c_b;
       if (c3_f_a > c3_d_b) {
@@ -10748,7 +10775,7 @@ static real_T c3_eml_matlab_zlanhs(SFc3_Model_01InstanceStruct *chartInstance,
         c3_check_forloop_overflow_error(chartInstance, c3_b_overflow);
       }
 
-      for (c3_i = c3_c_ilo; c3_i <= c3_i70; c3_i++) {
+      for (c3_i = c3_c_ilo; c3_i <= c3_i58; c3_i++) {
         c3_b_i = c3_i;
         c3_Aij.re = c3_A[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
           _SFD_INTEGER_CHECK("", (real_T)c3_b_i), 1, 3, 1, 0) + 3 *
@@ -11226,9 +11253,9 @@ static void c3_b_eml_matlab_zlartg(SFc3_Model_01InstanceStruct *chartInstance,
 static void c3_b_eml_matlab_zlascl(SFc3_Model_01InstanceStruct *chartInstance,
   real_T c3_cfrom, real_T c3_cto, creal_T c3_A[3], creal_T c3_b_A[3])
 {
-  int32_T c3_i71;
-  for (c3_i71 = 0; c3_i71 < 3; c3_i71++) {
-    c3_b_A[c3_i71] = c3_A[c3_i71];
+  int32_T c3_i59;
+  for (c3_i59 = 0; c3_i59 < 3; c3_i59++) {
+    c3_b_A[c3_i59] = c3_A[c3_i59];
   }
 
   c3_d_eml_matlab_zlascl(chartInstance, c3_cfrom, c3_cto, c3_b_A);
@@ -11237,7 +11264,7 @@ static void c3_b_eml_matlab_zlascl(SFc3_Model_01InstanceStruct *chartInstance,
 static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
   c3_x[3], creal_T c3_y[3], creal_T c3_z[3])
 {
-  int32_T c3_i72;
+  int32_T c3_i60;
   real_T c3_ar;
   real_T c3_ai;
   real_T c3_br;
@@ -11251,32 +11278,32 @@ static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
   real_T c3_sgnbr;
   real_T c3_sgnbi;
   (void)chartInstance;
-  for (c3_i72 = 0; c3_i72 < 3; c3_i72++) {
-    c3_ar = c3_x[c3_i72].re;
-    c3_ai = c3_x[c3_i72].im;
-    c3_br = c3_y[c3_i72].re;
-    c3_bi = c3_y[c3_i72].im;
+  for (c3_i60 = 0; c3_i60 < 3; c3_i60++) {
+    c3_ar = c3_x[c3_i60].re;
+    c3_ai = c3_x[c3_i60].im;
+    c3_br = c3_y[c3_i60].re;
+    c3_bi = c3_y[c3_i60].im;
     if (c3_bi == 0.0) {
       if (c3_ai == 0.0) {
-        c3_z[c3_i72].re = c3_ar / c3_br;
-        c3_z[c3_i72].im = 0.0;
+        c3_z[c3_i60].re = c3_ar / c3_br;
+        c3_z[c3_i60].im = 0.0;
       } else if (c3_ar == 0.0) {
-        c3_z[c3_i72].re = 0.0;
-        c3_z[c3_i72].im = c3_ai / c3_br;
+        c3_z[c3_i60].re = 0.0;
+        c3_z[c3_i60].im = c3_ai / c3_br;
       } else {
-        c3_z[c3_i72].re = c3_ar / c3_br;
-        c3_z[c3_i72].im = c3_ai / c3_br;
+        c3_z[c3_i60].re = c3_ar / c3_br;
+        c3_z[c3_i60].im = c3_ai / c3_br;
       }
     } else if (c3_br == 0.0) {
       if (c3_ar == 0.0) {
-        c3_z[c3_i72].re = c3_ai / c3_bi;
-        c3_z[c3_i72].im = 0.0;
+        c3_z[c3_i60].re = c3_ai / c3_bi;
+        c3_z[c3_i60].im = 0.0;
       } else if (c3_ai == 0.0) {
-        c3_z[c3_i72].re = 0.0;
-        c3_z[c3_i72].im = -(c3_ar / c3_bi);
+        c3_z[c3_i60].re = 0.0;
+        c3_z[c3_i60].im = -(c3_ar / c3_bi);
       } else {
-        c3_z[c3_i72].re = c3_ai / c3_bi;
-        c3_z[c3_i72].im = -(c3_ar / c3_bi);
+        c3_z[c3_i60].re = c3_ai / c3_bi;
+        c3_z[c3_i60].im = -(c3_ar / c3_bi);
       }
     } else {
       c3_brm = muDoubleScalarAbs(c3_br);
@@ -11286,8 +11313,8 @@ static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
         c3_d = c3_br + c3_s * c3_bi;
         c3_nr = c3_ar + c3_s * c3_ai;
         c3_ni = c3_ai - c3_s * c3_ar;
-        c3_z[c3_i72].re = c3_nr / c3_d;
-        c3_z[c3_i72].im = c3_ni / c3_d;
+        c3_z[c3_i60].re = c3_nr / c3_d;
+        c3_z[c3_i60].im = c3_ni / c3_d;
       } else if (c3_bim == c3_brm) {
         if (c3_br > 0.0) {
           c3_sgnbr = 0.5;
@@ -11303,15 +11330,15 @@ static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
 
         c3_nr = c3_ar * c3_sgnbr + c3_ai * c3_sgnbi;
         c3_ni = c3_ai * c3_sgnbr - c3_ar * c3_sgnbi;
-        c3_z[c3_i72].re = c3_nr / c3_brm;
-        c3_z[c3_i72].im = c3_ni / c3_brm;
+        c3_z[c3_i60].re = c3_nr / c3_brm;
+        c3_z[c3_i60].im = c3_ni / c3_brm;
       } else {
         c3_s = c3_br / c3_bi;
         c3_d = c3_bi + c3_s * c3_br;
         c3_nr = c3_s * c3_ar + c3_ai;
         c3_ni = c3_s * c3_ai - c3_ar;
-        c3_z[c3_i72].re = c3_nr / c3_d;
-        c3_z[c3_i72].im = c3_ni / c3_d;
+        c3_z[c3_i60].re = c3_nr / c3_d;
+        c3_z[c3_i60].im = c3_ni / c3_d;
       }
     }
   }
@@ -11319,7 +11346,7 @@ static void c3_b_eml_div(SFc3_Model_01InstanceStruct *chartInstance, creal_T
 
 static void c3_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
 {
-  int32_T c3_i73;
+  int32_T c3_i61;
   static char_T c3_varargin_1[26] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o',
     'o', 'l', 'b', 'o', 'x', ':', 'e', 'i', 'g', '_', 'Q', 'Z', 'f', 'a', 'i',
     'l', 'e', 'd' };
@@ -11327,8 +11354,8 @@ static void c3_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
   char_T c3_u[26];
   const mxArray *c3_y = NULL;
   (void)chartInstance;
-  for (c3_i73 = 0; c3_i73 < 26; c3_i73++) {
-    c3_u[c3_i73] = c3_varargin_1[c3_i73];
+  for (c3_i61 = 0; c3_i61 < 26; c3_i61++) {
+    c3_u[c3_i61] = c3_varargin_1[c3_i61];
   }
 
   c3_y = NULL;
@@ -11340,7 +11367,7 @@ static void c3_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
 
 static void c3_b_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
 {
-  int32_T c3_i74;
+  int32_T c3_i62;
   static char_T c3_varargin_1[34] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o',
     'o', 'l', 'b', 'o', 'x', ':', 'e', 'i', 'g', '_', 'Q', 'Z', 'n', 'o', 'n',
     'c', 'o', 'n', 'v', 'e', 'r', 'g', 'e', 'n', 'c', 'e' };
@@ -11348,8 +11375,8 @@ static void c3_b_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
   char_T c3_u[34];
   const mxArray *c3_y = NULL;
   (void)chartInstance;
-  for (c3_i74 = 0; c3_i74 < 34; c3_i74++) {
-    c3_u[c3_i74] = c3_varargin_1[c3_i74];
+  for (c3_i62 = 0; c3_i62 < 34; c3_i62++) {
+    c3_u[c3_i62] = c3_varargin_1[c3_i62];
   }
 
   c3_y = NULL;
@@ -11374,22 +11401,27 @@ static real_T c3_mpower(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_a)
   return c3_d_a * c3_d_a;
 }
 
+static void c3_b_eml_switch_helper(SFc3_Model_01InstanceStruct *chartInstance)
+{
+  (void)chartInstance;
+}
+
 static void c3_inv(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
                    real_T c3_y[9])
 {
-  int32_T c3_i75;
+  int32_T c3_i63;
   real_T c3_b_x[9];
-  int32_T c3_i76;
+  int32_T c3_i64;
   real_T c3_c_x[9];
   real_T c3_n1x;
-  int32_T c3_i77;
+  int32_T c3_i65;
   real_T c3_b_y[9];
   real_T c3_n1xinv;
   real_T c3_rc;
   real_T c3_d_x;
   boolean_T c3_b;
   real_T c3_e_x;
-  int32_T c3_i78;
+  int32_T c3_i66;
   static char_T c3_cv4[8] = { '%', '%', '%', 'd', '.', '%', 'd', 'e' };
 
   char_T c3_u[8];
@@ -11401,23 +11433,23 @@ static void c3_inv(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
   real_T c3_d_u;
   const mxArray *c3_f_y = NULL;
   char_T c3_str[14];
-  int32_T c3_i79;
+  int32_T c3_i67;
   char_T c3_b_str[14];
   boolean_T guard1 = false;
   boolean_T guard2 = false;
   boolean_T guard3 = false;
-  for (c3_i75 = 0; c3_i75 < 9; c3_i75++) {
-    c3_b_x[c3_i75] = c3_x[c3_i75];
+  for (c3_i63 = 0; c3_i63 < 9; c3_i63++) {
+    c3_b_x[c3_i63] = c3_x[c3_i63];
   }
 
   c3_inv3x3(chartInstance, c3_b_x, c3_y);
-  for (c3_i76 = 0; c3_i76 < 9; c3_i76++) {
-    c3_c_x[c3_i76] = c3_x[c3_i76];
+  for (c3_i64 = 0; c3_i64 < 9; c3_i64++) {
+    c3_c_x[c3_i64] = c3_x[c3_i64];
   }
 
   c3_n1x = c3_norm(chartInstance, c3_c_x);
-  for (c3_i77 = 0; c3_i77 < 9; c3_i77++) {
-    c3_b_y[c3_i77] = c3_y[c3_i77];
+  for (c3_i65 = 0; c3_i65 < 9; c3_i65++) {
+    c3_b_y[c3_i65] = c3_y[c3_i65];
   }
 
   c3_n1xinv = c3_norm(chartInstance, c3_b_y);
@@ -11445,8 +11477,8 @@ static void c3_inv(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
 
     if (guard3 == true) {
       c3_e_x = c3_rc;
-      for (c3_i78 = 0; c3_i78 < 8; c3_i78++) {
-        c3_u[c3_i78] = c3_cv4[c3_i78];
+      for (c3_i66 = 0; c3_i66 < 8; c3_i66++) {
+        c3_u[c3_i66] = c3_cv4[c3_i66];
       }
 
       c3_c_y = NULL;
@@ -11469,8 +11501,8 @@ static void c3_inv(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9],
         sf_mex_call_debug(sfGlobalDebugInstanceStruct, "sprintf", 1U, 3U, 14,
                           c3_c_y, 14, c3_d_y, 14, c3_e_y), 14, c3_f_y),
                             "sprintf", c3_str);
-      for (c3_i79 = 0; c3_i79 < 14; c3_i79++) {
-        c3_b_str[c3_i79] = c3_str[c3_i79];
+      for (c3_i67 = 0; c3_i67 < 14; c3_i67++) {
+        c3_b_str[c3_i67] = c3_str[c3_i67];
       }
 
       c3_d_eml_warning(chartInstance, c3_b_str);
@@ -11826,7 +11858,7 @@ static real_T c3_norm(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_x[9]
 
 static void c3_c_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
 {
-  int32_T c3_i80;
+  int32_T c3_i68;
   static char_T c3_varargin_1[27] = { 'C', 'o', 'd', 'e', 'r', ':', 'M', 'A',
     'T', 'L', 'A', 'B', ':', 's', 'i', 'n', 'g', 'u', 'l', 'a', 'r', 'M', 'a',
     't', 'r', 'i', 'x' };
@@ -11834,8 +11866,8 @@ static void c3_c_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
   char_T c3_u[27];
   const mxArray *c3_y = NULL;
   (void)chartInstance;
-  for (c3_i80 = 0; c3_i80 < 27; c3_i80++) {
-    c3_u[c3_i80] = c3_varargin_1[c3_i80];
+  for (c3_i68 = 0; c3_i68 < 27; c3_i68++) {
+    c3_u[c3_i68] = c3_varargin_1[c3_i68];
   }
 
   c3_y = NULL;
@@ -11848,25 +11880,25 @@ static void c3_c_eml_warning(SFc3_Model_01InstanceStruct *chartInstance)
 static void c3_d_eml_warning(SFc3_Model_01InstanceStruct *chartInstance, char_T
   c3_varargin_2[14])
 {
-  int32_T c3_i81;
+  int32_T c3_i69;
   static char_T c3_varargin_1[33] = { 'C', 'o', 'd', 'e', 'r', ':', 'M', 'A',
     'T', 'L', 'A', 'B', ':', 'i', 'l', 'l', 'C', 'o', 'n', 'd', 'i', 't', 'i',
     'o', 'n', 'e', 'd', 'M', 'a', 't', 'r', 'i', 'x' };
 
   char_T c3_u[33];
   const mxArray *c3_y = NULL;
-  int32_T c3_i82;
+  int32_T c3_i70;
   char_T c3_b_u[14];
   const mxArray *c3_b_y = NULL;
   (void)chartInstance;
-  for (c3_i81 = 0; c3_i81 < 33; c3_i81++) {
-    c3_u[c3_i81] = c3_varargin_1[c3_i81];
+  for (c3_i69 = 0; c3_i69 < 33; c3_i69++) {
+    c3_u[c3_i69] = c3_varargin_1[c3_i69];
   }
 
   c3_y = NULL;
   sf_mex_assign(&c3_y, sf_mex_create("y", c3_u, 10, 0U, 1U, 0U, 2, 1, 33), false);
-  for (c3_i82 = 0; c3_i82 < 14; c3_i82++) {
-    c3_b_u[c3_i82] = c3_varargin_2[c3_i82];
+  for (c3_i70 = 0; c3_i70 < 14; c3_i70++) {
+    c3_b_u[c3_i70] = c3_varargin_2[c3_i70];
   }
 
   c3_b_y = NULL;
@@ -11875,6 +11907,212 @@ static void c3_d_eml_warning(SFc3_Model_01InstanceStruct *chartInstance, char_T
   sf_mex_call_debug(sfGlobalDebugInstanceStruct, "warning", 0U, 1U, 14,
                     sf_mex_call_debug(sfGlobalDebugInstanceStruct, "message", 1U,
     2U, 14, c3_y, 14, c3_b_y));
+}
+
+static void c3_b_mpower(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_a
+  [9], real_T c3_b, real_T c3_c[9])
+{
+  real_T c3_x;
+  real_T c3_b_x;
+  int32_T c3_i71;
+  real_T c3_b_a[9];
+  real_T c3_b_b;
+  int32_T c3_i72;
+  int32_T c3_k;
+  real_T c3_b_k;
+  real_T c3_c_x;
+  real_T c3_e;
+  boolean_T c3_firstmult;
+  real_T c3_d_x;
+  real_T c3_ed2;
+  int32_T c3_i73;
+  int32_T c3_i74;
+  real_T c3_c_a[9];
+  int32_T c3_i75;
+  int32_T c3_i76;
+  real_T c3_d_a[9];
+  int32_T c3_i77;
+  real_T c3_e_a[9];
+  int32_T c3_i78;
+  real_T c3_b_c[9];
+  int32_T c3_i79;
+  int32_T c3_i80;
+  int32_T c3_i81;
+  real_T c3_f_a[9];
+  int32_T c3_i82;
+  real_T c3_g_a[9];
+  real_T c3_c_b;
+  int32_T c3_i83;
+  real_T c3_h_a[9];
+  creal_T c3_D[9];
+  creal_T c3_V[9];
+  int32_T c3_j;
+  real_T c3_b_j;
+  creal_T c3_b_D;
+  creal_T c3_r;
+  int32_T c3_i;
+  real_T c3_b_i;
+  int32_T c3_i84;
+  creal_T c3_b_V[9];
+  int32_T c3_i85;
+  creal_T c3_c_D[9];
+  int32_T c3_i86;
+  int32_T exitg1;
+  c3_x = c3_b;
+  c3_b_x = c3_x;
+  c3_b_x = muDoubleScalarFloor(c3_b_x);
+  if (c3_b_x == c3_b) {
+    for (c3_i71 = 0; c3_i71 < 9; c3_i71++) {
+      c3_b_a[c3_i71] = c3_a[c3_i71];
+    }
+
+    c3_b_b = c3_b;
+    c3_b_eml_scalar_eg(chartInstance);
+    if (c3_b_b == 0.0) {
+      for (c3_i72 = 0; c3_i72 < 9; c3_i72++) {
+        c3_c[c3_i72] = 0.0;
+      }
+
+      for (c3_k = 0; c3_k < 3; c3_k++) {
+        c3_b_k = 1.0 + (real_T)c3_k;
+        c3_c[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+                c3_b_k), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
+                (int32_T)_SFD_INTEGER_CHECK("", c3_b_k), 1, 3, 2, 0) - 1)) - 1] =
+          1.0;
+      }
+    } else {
+      c3_c_x = c3_b_b;
+      c3_e = muDoubleScalarAbs(c3_c_x);
+      c3_firstmult = true;
+      do {
+        exitg1 = 0;
+        c3_d_x = c3_e / 2.0;
+        c3_ed2 = c3_d_x;
+        c3_ed2 = muDoubleScalarFloor(c3_ed2);
+        if (2.0 * c3_ed2 != c3_e) {
+          if (c3_firstmult) {
+            for (c3_i73 = 0; c3_i73 < 9; c3_i73++) {
+              c3_c[c3_i73] = c3_b_a[c3_i73];
+            }
+
+            c3_firstmult = false;
+          } else {
+            for (c3_i74 = 0; c3_i74 < 9; c3_i74++) {
+              c3_c_a[c3_i74] = c3_c[c3_i74];
+            }
+
+            c3_c_eml_scalar_eg(chartInstance);
+            c3_c_eml_scalar_eg(chartInstance);
+            for (c3_i75 = 0; c3_i75 < 9; c3_i75++) {
+              c3_c[c3_i75] = 0.0;
+            }
+
+            for (c3_i76 = 0; c3_i76 < 9; c3_i76++) {
+              c3_d_a[c3_i76] = c3_c_a[c3_i76];
+            }
+
+            for (c3_i77 = 0; c3_i77 < 9; c3_i77++) {
+              c3_e_a[c3_i77] = c3_b_a[c3_i77];
+            }
+
+            c3_b_eml_xgemm(chartInstance, c3_d_a, c3_e_a, c3_c);
+          }
+        }
+
+        if (c3_ed2 == 0.0) {
+          exitg1 = 1;
+        } else {
+          c3_e = c3_ed2;
+          for (c3_i79 = 0; c3_i79 < 9; c3_i79++) {
+            c3_c_a[c3_i79] = c3_b_a[c3_i79];
+          }
+
+          c3_c_eml_scalar_eg(chartInstance);
+          c3_c_eml_scalar_eg(chartInstance);
+          for (c3_i80 = 0; c3_i80 < 9; c3_i80++) {
+            c3_b_a[c3_i80] = 0.0;
+          }
+
+          for (c3_i81 = 0; c3_i81 < 9; c3_i81++) {
+            c3_f_a[c3_i81] = c3_c_a[c3_i81];
+          }
+
+          for (c3_i82 = 0; c3_i82 < 9; c3_i82++) {
+            c3_g_a[c3_i82] = c3_c_a[c3_i82];
+          }
+
+          c3_b_eml_xgemm(chartInstance, c3_f_a, c3_g_a, c3_b_a);
+        }
+      } while (exitg1 == 0);
+
+      if (c3_b_b < 0.0) {
+        for (c3_i78 = 0; c3_i78 < 9; c3_i78++) {
+          c3_b_c[c3_i78] = c3_c[c3_i78];
+        }
+
+        c3_inv(chartInstance, c3_b_c, c3_c);
+      }
+    }
+  } else {
+    c3_c_b = c3_b;
+    c3_b_eml_scalar_eg(chartInstance);
+    c3_b_eml_error(chartInstance);
+    for (c3_i83 = 0; c3_i83 < 9; c3_i83++) {
+      c3_h_a[c3_i83] = c3_a[c3_i83];
+    }
+
+    c3_b_eig(chartInstance, c3_h_a, c3_V, c3_D);
+    for (c3_j = 0; c3_j < 3; c3_j++) {
+      c3_b_j = 1.0 + (real_T)c3_j;
+      c3_b_D.re = c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 1, 0) + 3 *
+                        (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].re;
+      c3_b_D.im = c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 1, 0) + 3 *
+                        (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].im;
+      c3_r = c3_power(chartInstance, c3_b_D, c3_c_b);
+      for (c3_i = 0; c3_i < 3; c3_i++) {
+        c3_b_i = 1.0 + (real_T)c3_i;
+        c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+                c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
+                (int32_T)_SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].
+          re = c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK
+                      ("", c3_b_i), 1, 3, 1, 0) + 3 *
+                     (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+          _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].re * c3_r.re -
+          c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+                  c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
+                  (int32_T)_SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1]
+          .im * c3_r.im;
+        c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+                c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
+                (int32_T)_SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].
+          im = c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK
+                      ("", c3_b_i), 1, 3, 1, 0) + 3 *
+                     (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+          _SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1].re * c3_r.im +
+          c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+                  c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
+                  (int32_T)_SFD_INTEGER_CHECK("", c3_b_j), 1, 3, 2, 0) - 1)) - 1]
+          .im * c3_r.re;
+      }
+    }
+
+    for (c3_i84 = 0; c3_i84 < 9; c3_i84++) {
+      c3_b_V[c3_i84] = c3_V[c3_i84];
+    }
+
+    for (c3_i85 = 0; c3_i85 < 9; c3_i85++) {
+      c3_c_D[c3_i85] = c3_D[c3_i85];
+    }
+
+    c3_eml_lusolve(chartInstance, c3_b_V, c3_c_D, c3_D);
+    for (c3_i86 = 0; c3_i86 < 9; c3_i86++) {
+      c3_c[c3_i86] = c3_D[c3_i86].re;
+    }
+  }
 }
 
 static void c3_b_eml_scalar_eg(SFc3_Model_01InstanceStruct *chartInstance)
@@ -11890,146 +12128,226 @@ static void c3_c_eml_scalar_eg(SFc3_Model_01InstanceStruct *chartInstance)
 static void c3_eml_xgemm(SFc3_Model_01InstanceStruct *chartInstance, real_T
   c3_A[9], real_T c3_B[9], real_T c3_C[9], real_T c3_b_C[9])
 {
-  int32_T c3_i83;
-  int32_T c3_i84;
+  int32_T c3_i87;
+  int32_T c3_i88;
   real_T c3_b_A[9];
-  int32_T c3_i85;
+  int32_T c3_i89;
   real_T c3_b_B[9];
-  for (c3_i83 = 0; c3_i83 < 9; c3_i83++) {
-    c3_b_C[c3_i83] = c3_C[c3_i83];
+  for (c3_i87 = 0; c3_i87 < 9; c3_i87++) {
+    c3_b_C[c3_i87] = c3_C[c3_i87];
   }
 
-  for (c3_i84 = 0; c3_i84 < 9; c3_i84++) {
-    c3_b_A[c3_i84] = c3_A[c3_i84];
+  for (c3_i88 = 0; c3_i88 < 9; c3_i88++) {
+    c3_b_A[c3_i88] = c3_A[c3_i88];
   }
 
-  for (c3_i85 = 0; c3_i85 < 9; c3_i85++) {
-    c3_b_B[c3_i85] = c3_B[c3_i85];
+  for (c3_i89 = 0; c3_i89 < 9; c3_i89++) {
+    c3_b_B[c3_i89] = c3_B[c3_i89];
   }
 
   c3_b_eml_xgemm(chartInstance, c3_b_A, c3_b_B, c3_b_C);
 }
 
-static void c3_matrix_to_scalar_power(SFc3_Model_01InstanceStruct *chartInstance,
-  real_T c3_a[9], real_T c3_b, real_T c3_c[9])
+static void c3_b_eml_error(SFc3_Model_01InstanceStruct *chartInstance)
 {
-  int32_T c3_i86;
+  int32_T c3_i90;
+  static char_T c3_cv5[37] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o', 'o', 'l',
+    'b', 'o', 'x', ':', 'm', 'p', 'o', 'w', 'e', 'r', '_', 'n', 'e', 'e', 'd',
+    'C', 'o', 'm', 'p', 'l', 'e', 'x', 'I', 'n', 'p', 'u', 't' };
+
+  char_T c3_u[37];
+  const mxArray *c3_y = NULL;
+  (void)chartInstance;
+  for (c3_i90 = 0; c3_i90 < 37; c3_i90++) {
+    c3_u[c3_i90] = c3_cv5[c3_i90];
+  }
+
+  c3_y = NULL;
+  sf_mex_assign(&c3_y, sf_mex_create("y", c3_u, 10, 0U, 1U, 0U, 2, 1, 37), false);
+  sf_mex_call_debug(sfGlobalDebugInstanceStruct, "error", 0U, 1U, 14,
+                    sf_mex_call_debug(sfGlobalDebugInstanceStruct, "message", 1U,
+    1U, 14, c3_y));
+}
+
+static void c3_b_eig(SFc3_Model_01InstanceStruct *chartInstance, real_T c3_A[9],
+                     creal_T c3_V[9], creal_T c3_D[9])
+{
+  int32_T c3_i91;
   static creal_T c3_dc5 = { 0.0, 0.0 };
 
-  creal_T c3_V[9];
-  int32_T c3_i87;
-  creal_T c3_b_V[9];
+  creal_T c3_b_A[9];
+  int32_T c3_i92;
+  creal_T c3_c_A[9];
   creal_T c3_beta1[3];
   creal_T c3_alpha1[3];
   real_T c3_info;
   real_T c3_b_info;
   int32_T c3_coltop;
   int32_T c3_b_coltop;
-  int32_T c3_i88;
-  creal_T c3_c_V[9];
+  int32_T c3_ix0;
+  int32_T c3_b_ix0;
+  int32_T c3_c_ix0;
   real_T c3_colnorm;
-  int32_T c3_c_coltop;
+  real_T c3_scale;
+  int32_T c3_kstart;
+  int32_T c3_a;
+  int32_T c3_kend;
+  int32_T c3_b_kstart;
+  int32_T c3_b_kend;
   int32_T c3_b_a;
+  int32_T c3_b;
   int32_T c3_c_a;
-  int32_T c3_i89;
-  int32_T c3_d_a;
   int32_T c3_b_b;
-  int32_T c3_e_a;
-  int32_T c3_c_b;
   boolean_T c3_overflow;
+  int32_T c3_k;
+  int32_T c3_b_k;
+  real_T c3_x;
+  real_T c3_b_x;
+  real_T c3_absxk;
+  real_T c3_t;
+  real_T c3_c_x;
+  real_T c3_d_x;
+  int32_T c3_c_coltop;
+  int32_T c3_d_a;
+  int32_T c3_e_a;
+  int32_T c3_i93;
+  int32_T c3_f_a;
+  int32_T c3_c_b;
+  int32_T c3_g_a;
+  int32_T c3_d_b;
+  boolean_T c3_b_overflow;
   int32_T c3_j;
   int32_T c3_b_j;
-  creal_T c3_r;
+  creal_T c3_d_A;
   real_T c3_B;
   real_T c3_y;
   real_T c3_c_info;
   real_T c3_d_info;
-  int32_T c3_i90;
+  int32_T c3_i94;
   creal_T c3_b_alpha1[3];
-  int32_T c3_i91;
+  int32_T c3_i95;
   creal_T c3_b_beta1[3];
-  int32_T c3_i92;
-  creal_T c3_D[9];
+  int32_T c3_i96;
   int32_T c3_c_j;
   int32_T c3_d_j;
-  int32_T c3_e_j;
-  real_T c3_f_j;
-  creal_T c3_b_D;
-  int32_T c3_i;
-  real_T c3_b_i;
-  int32_T c3_i93;
-  creal_T c3_d_V[9];
-  int32_T c3_i94;
-  creal_T c3_c_D[9];
-  int32_T c3_i95;
-  c3_b_eml_scalar_eg(chartInstance);
-  c3_b_eml_error(chartInstance);
-  for (c3_i86 = 0; c3_i86 < 9; c3_i86++) {
-    c3_V[c3_i86].re = c3_a[c3_i86] + c3_dc5.re;
-    c3_V[c3_i86].im = c3_dc5.im;
+  for (c3_i91 = 0; c3_i91 < 9; c3_i91++) {
+    c3_b_A[c3_i91].re = c3_A[c3_i91] + c3_dc5.re;
+    c3_b_A[c3_i91].im = c3_dc5.im;
   }
 
-  for (c3_i87 = 0; c3_i87 < 9; c3_i87++) {
-    c3_b_V[c3_i87] = c3_V[c3_i87];
+  for (c3_i92 = 0; c3_i92 < 9; c3_i92++) {
+    c3_c_A[c3_i92] = c3_b_A[c3_i92];
   }
 
-  c3_eml_matlab_zggev(chartInstance, c3_b_V, &c3_info, c3_alpha1, c3_beta1, c3_V);
+  c3_eml_matlab_zggev(chartInstance, c3_c_A, &c3_info, c3_alpha1, c3_beta1, c3_V);
   c3_b_info = c3_info;
   for (c3_coltop = 1; c3_coltop < 8; c3_coltop += 3) {
     c3_b_coltop = c3_coltop;
-    for (c3_i88 = 0; c3_i88 < 9; c3_i88++) {
-      c3_c_V[c3_i88] = c3_V[c3_i88];
-    }
-
-    c3_colnorm = c3_eml_xnrm2(chartInstance, c3_c_V, c3_b_coltop);
-    c3_c_coltop = c3_b_coltop;
-    c3_b_a = c3_b_coltop;
-    c3_c_a = c3_b_a + 2;
-    c3_i89 = c3_c_a;
-    c3_d_a = c3_c_coltop;
-    c3_b_b = c3_i89;
-    c3_e_a = c3_d_a;
-    c3_c_b = c3_b_b;
-    if (c3_e_a > c3_c_b) {
+    c3_ix0 = c3_b_coltop;
+    c3_b_ix0 = c3_ix0;
+    c3_b_eml_switch_helper(chartInstance);
+    c3_c_ix0 = c3_b_ix0;
+    c3_colnorm = 0.0;
+    c3_realmin(chartInstance);
+    c3_scale = 2.2250738585072014E-308;
+    c3_kstart = c3_c_ix0;
+    c3_a = c3_kstart;
+    c3_kend = c3_a;
+    c3_b_kstart = c3_kstart;
+    c3_b_kend = c3_kend + 2;
+    c3_b_a = c3_b_kstart;
+    c3_b = c3_b_kend;
+    c3_c_a = c3_b_a;
+    c3_b_b = c3_b;
+    if (c3_c_a > c3_b_b) {
       c3_overflow = false;
     } else {
       c3_eml_switch_helper(chartInstance);
-      c3_overflow = (c3_c_b > 2147483646);
+      c3_overflow = (c3_b_b > 2147483646);
     }
 
     if (c3_overflow) {
       c3_check_forloop_overflow_error(chartInstance, c3_overflow);
     }
 
-    for (c3_j = c3_c_coltop; c3_j <= c3_i89; c3_j++) {
+    for (c3_k = c3_b_kstart; c3_k <= c3_b_kend; c3_k++) {
+      c3_b_k = c3_k;
+      c3_x = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
+        (real_T)c3_b_k), 1, 9, 1, 0) - 1].re;
+      c3_b_x = c3_x;
+      c3_absxk = muDoubleScalarAbs(c3_b_x);
+      if (c3_absxk > c3_scale) {
+        c3_t = c3_scale / c3_absxk;
+        c3_colnorm = 1.0 + c3_colnorm * c3_t * c3_t;
+        c3_scale = c3_absxk;
+      } else {
+        c3_t = c3_absxk / c3_scale;
+        c3_colnorm += c3_t * c3_t;
+      }
+
+      c3_c_x = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK(
+        "", (real_T)c3_b_k), 1, 9, 1, 0) - 1].im;
+      c3_d_x = c3_c_x;
+      c3_absxk = muDoubleScalarAbs(c3_d_x);
+      if (c3_absxk > c3_scale) {
+        c3_t = c3_scale / c3_absxk;
+        c3_colnorm = 1.0 + c3_colnorm * c3_t * c3_t;
+        c3_scale = c3_absxk;
+      } else {
+        c3_t = c3_absxk / c3_scale;
+        c3_colnorm += c3_t * c3_t;
+      }
+    }
+
+    c3_colnorm = c3_scale * muDoubleScalarSqrt(c3_colnorm);
+    c3_c_coltop = c3_b_coltop;
+    c3_d_a = c3_b_coltop;
+    c3_e_a = c3_d_a + 2;
+    c3_i93 = c3_e_a;
+    c3_f_a = c3_c_coltop;
+    c3_c_b = c3_i93;
+    c3_g_a = c3_f_a;
+    c3_d_b = c3_c_b;
+    if (c3_g_a > c3_d_b) {
+      c3_b_overflow = false;
+    } else {
+      c3_eml_switch_helper(chartInstance);
+      c3_b_overflow = (c3_d_b > 2147483646);
+    }
+
+    if (c3_b_overflow) {
+      c3_check_forloop_overflow_error(chartInstance, c3_b_overflow);
+    }
+
+    for (c3_j = c3_c_coltop; c3_j <= c3_i93; c3_j++) {
       c3_b_j = c3_j;
-      c3_r.re = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK
-        ("", (real_T)c3_b_j), 1, 9, 1, 0) - 1].re;
-      c3_r.im = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK
-        ("", (real_T)c3_b_j), 1, 9, 1, 0) - 1].im;
+      c3_d_A.re = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", (real_T)c3_b_j), 1, 9, 1, 0) - 1].re;
+      c3_d_A.im = c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
+        _SFD_INTEGER_CHECK("", (real_T)c3_b_j), 1, 9, 1, 0) - 1].im;
       c3_B = c3_colnorm;
       c3_y = c3_B;
-      c3_r = c3_eml_div(chartInstance, c3_r, c3_y);
+      c3_d_A = c3_eml_div(chartInstance, c3_d_A, c3_y);
       c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-        (real_T)c3_b_j), 1, 9, 1, 0) - 1].re = c3_r.re;
+        (real_T)c3_b_j), 1, 9, 1, 0) - 1].re = c3_d_A.re;
       c3_V[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-        (real_T)c3_b_j), 1, 9, 1, 0) - 1].im = c3_r.im;
+        (real_T)c3_b_j), 1, 9, 1, 0) - 1].im = c3_d_A.im;
     }
   }
 
   c3_c_info = c3_b_info;
   c3_d_info = c3_c_info;
-  for (c3_i90 = 0; c3_i90 < 3; c3_i90++) {
-    c3_b_alpha1[c3_i90] = c3_alpha1[c3_i90];
+  for (c3_i94 = 0; c3_i94 < 3; c3_i94++) {
+    c3_b_alpha1[c3_i94] = c3_alpha1[c3_i94];
   }
 
-  for (c3_i91 = 0; c3_i91 < 3; c3_i91++) {
-    c3_b_beta1[c3_i91] = c3_beta1[c3_i91];
+  for (c3_i95 = 0; c3_i95 < 3; c3_i95++) {
+    c3_b_beta1[c3_i95] = c3_beta1[c3_i95];
   }
 
   c3_b_eml_div(chartInstance, c3_b_alpha1, c3_b_beta1, c3_alpha1);
-  for (c3_i92 = 0; c3_i92 < 9; c3_i92++) {
-    c3_D[c3_i92] = c3_dc5;
+  for (c3_i96 = 0; c3_i96 < 9; c3_i96++) {
+    c3_D[c3_i96] = c3_dc5;
   }
 
   for (c3_c_j = 1; c3_c_j < 4; c3_c_j++) {
@@ -12053,76 +12371,6 @@ static void c3_matrix_to_scalar_power(SFc3_Model_01InstanceStruct *chartInstance
       c3_b_eml_warning(chartInstance);
     }
   }
-
-  for (c3_e_j = 0; c3_e_j < 3; c3_e_j++) {
-    c3_f_j = 1.0 + (real_T)c3_e_j;
-    c3_b_D.re = c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-      _SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 1, 0) + 3 *
-                      (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-      _SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1].re;
-    c3_b_D.im = c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-      _SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 1, 0) + 3 *
-                      (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-      _SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1].im;
-    c3_r = c3_power(chartInstance, c3_b_D, c3_b);
-    for (c3_i = 0; c3_i < 3; c3_i++) {
-      c3_b_i = 1.0 + (real_T)c3_i;
-      c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-              c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
-              (int32_T)_SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1].re
-        = c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-                  c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
-                  (int32_T)_SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1]
-        .re * c3_r.re - c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-        _SFD_INTEGER_CHECK("", c3_b_i), 1, 3, 1, 0) + 3 *
-        (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("", c3_f_j),
-        1, 3, 2, 0) - 1)) - 1].im * c3_r.im;
-      c3_D[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-              c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
-              (int32_T)_SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1].im
-        = c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-                  c3_b_i), 1, 3, 1, 0) + 3 * (_SFD_EML_ARRAY_BOUNDS_CHECK("",
-                  (int32_T)_SFD_INTEGER_CHECK("", c3_f_j), 1, 3, 2, 0) - 1)) - 1]
-        .re * c3_r.im + c3_V[(_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)
-        _SFD_INTEGER_CHECK("", c3_b_i), 1, 3, 1, 0) + 3 *
-        (_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("", c3_f_j),
-        1, 3, 2, 0) - 1)) - 1].im * c3_r.re;
-    }
-  }
-
-  for (c3_i93 = 0; c3_i93 < 9; c3_i93++) {
-    c3_d_V[c3_i93] = c3_V[c3_i93];
-  }
-
-  for (c3_i94 = 0; c3_i94 < 9; c3_i94++) {
-    c3_c_D[c3_i94] = c3_D[c3_i94];
-  }
-
-  c3_eml_lusolve(chartInstance, c3_d_V, c3_c_D, c3_D);
-  for (c3_i95 = 0; c3_i95 < 9; c3_i95++) {
-    c3_c[c3_i95] = c3_D[c3_i95].re;
-  }
-}
-
-static void c3_b_eml_error(SFc3_Model_01InstanceStruct *chartInstance)
-{
-  int32_T c3_i96;
-  static char_T c3_cv5[37] = { 'C', 'o', 'd', 'e', 'r', ':', 't', 'o', 'o', 'l',
-    'b', 'o', 'x', ':', 'm', 'p', 'o', 'w', 'e', 'r', '_', 'n', 'e', 'e', 'd',
-    'C', 'o', 'm', 'p', 'l', 'e', 'x', 'I', 'n', 'p', 'u', 't' };
-
-  char_T c3_u[37];
-  const mxArray *c3_y = NULL;
-  (void)chartInstance;
-  for (c3_i96 = 0; c3_i96 < 37; c3_i96++) {
-    c3_u[c3_i96] = c3_cv5[c3_i96];
-  }
-
-  c3_y = NULL;
-  sf_mex_assign(&c3_y, sf_mex_create("y", c3_u, 10, 0U, 1U, 0U, 2, 1, 37), false);
-  sf_mex_call_debug(sfGlobalDebugInstanceStruct, "error", 0U, 1U, 14,
-                    sf_mex_call_debug(sfGlobalDebugInstanceStruct, "message", 1U,
-    1U, 14, c3_y));
 }
 
 static void c3_eml_matlab_zggev(SFc3_Model_01InstanceStruct *chartInstance,
@@ -12570,88 +12818,6 @@ static creal_T c3_rdivide(SFc3_Model_01InstanceStruct *chartInstance, creal_T
   }
 
   return c3_z;
-}
-
-static real_T c3_eml_xnrm2(SFc3_Model_01InstanceStruct *chartInstance, creal_T
-  c3_x[9], int32_T c3_ix0)
-{
-  real_T c3_y;
-  int32_T c3_b_ix0;
-  int32_T c3_c_ix0;
-  real_T c3_scale;
-  int32_T c3_kstart;
-  int32_T c3_a;
-  int32_T c3_kend;
-  int32_T c3_b_kstart;
-  int32_T c3_b_kend;
-  int32_T c3_b_a;
-  int32_T c3_b;
-  int32_T c3_c_a;
-  int32_T c3_b_b;
-  boolean_T c3_overflow;
-  int32_T c3_k;
-  int32_T c3_b_k;
-  real_T c3_b_x;
-  real_T c3_c_x;
-  real_T c3_absxk;
-  real_T c3_t;
-  real_T c3_d_x;
-  real_T c3_e_x;
-  c3_b_ix0 = c3_ix0;
-  c3_c_ix0 = c3_b_ix0;
-  c3_y = 0.0;
-  c3_realmin(chartInstance);
-  c3_scale = 2.2250738585072014E-308;
-  c3_kstart = c3_c_ix0;
-  c3_a = c3_kstart;
-  c3_kend = c3_a;
-  c3_b_kstart = c3_kstart;
-  c3_b_kend = c3_kend + 2;
-  c3_b_a = c3_b_kstart;
-  c3_b = c3_b_kend;
-  c3_c_a = c3_b_a;
-  c3_b_b = c3_b;
-  if (c3_c_a > c3_b_b) {
-    c3_overflow = false;
-  } else {
-    c3_eml_switch_helper(chartInstance);
-    c3_overflow = (c3_b_b > 2147483646);
-  }
-
-  if (c3_overflow) {
-    c3_check_forloop_overflow_error(chartInstance, c3_overflow);
-  }
-
-  for (c3_k = c3_b_kstart; c3_k <= c3_b_kend; c3_k++) {
-    c3_b_k = c3_k;
-    c3_b_x = c3_x[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-      (real_T)c3_b_k), 1, 9, 1, 0) - 1].re;
-    c3_c_x = c3_b_x;
-    c3_absxk = muDoubleScalarAbs(c3_c_x);
-    if (c3_absxk > c3_scale) {
-      c3_t = c3_scale / c3_absxk;
-      c3_y = 1.0 + c3_y * c3_t * c3_t;
-      c3_scale = c3_absxk;
-    } else {
-      c3_t = c3_absxk / c3_scale;
-      c3_y += c3_t * c3_t;
-    }
-
-    c3_d_x = c3_x[_SFD_EML_ARRAY_BOUNDS_CHECK("", (int32_T)_SFD_INTEGER_CHECK("",
-      (real_T)c3_b_k), 1, 9, 1, 0) - 1].im;
-    c3_e_x = c3_d_x;
-    c3_absxk = muDoubleScalarAbs(c3_e_x);
-    if (c3_absxk > c3_scale) {
-      c3_t = c3_scale / c3_absxk;
-      c3_y = 1.0 + c3_y * c3_t * c3_t;
-      c3_scale = c3_absxk;
-    } else {
-      c3_t = c3_absxk / c3_scale;
-      c3_y += c3_t * c3_t;
-    }
-  }
-
-  return c3_scale * muDoubleScalarSqrt(c3_y);
 }
 
 static creal_T c3_power(SFc3_Model_01InstanceStruct *chartInstance, creal_T c3_a,
@@ -17176,10 +17342,10 @@ extern void utFree(void*);
 
 void sf_c3_Model_01_get_check_sum(mxArray *plhs[])
 {
-  ((real_T *)mxGetPr((plhs[0])))[0] = (real_T)(3869864986U);
-  ((real_T *)mxGetPr((plhs[0])))[1] = (real_T)(3124042344U);
-  ((real_T *)mxGetPr((plhs[0])))[2] = (real_T)(131299736U);
-  ((real_T *)mxGetPr((plhs[0])))[3] = (real_T)(414282584U);
+  ((real_T *)mxGetPr((plhs[0])))[0] = (real_T)(2243505580U);
+  ((real_T *)mxGetPr((plhs[0])))[1] = (real_T)(4155670865U);
+  ((real_T *)mxGetPr((plhs[0])))[2] = (real_T)(512280497U);
+  ((real_T *)mxGetPr((plhs[0])))[3] = (real_T)(3062873590U);
 }
 
 mxArray *sf_c3_Model_01_get_autoinheritance_info(void)
@@ -17191,7 +17357,7 @@ mxArray *sf_c3_Model_01_get_autoinheritance_info(void)
     autoinheritanceFields);
 
   {
-    mxArray *mxChecksum = mxCreateString("EGwcflfkiYxPecBCz3KLTH");
+    mxArray *mxChecksum = mxCreateString("lx2qhGzJpmBEcejY5I6nJC");
     mxSetField(mxAutoinheritanceInfo,0,"checksum",mxChecksum);
   }
 
@@ -17407,10 +17573,12 @@ static void chart_debug_initialization(SimStruct *S, unsigned int
         _SFD_CV_INIT_TRANS(0,0,NULL,NULL,0,NULL);
 
         /* Initialization of MATLAB Function Model Coverage */
-        _SFD_CV_INIT_EML(0,1,1,0,0,0,0,2,0,0,0);
-        _SFD_CV_INIT_EML_FCN(0,0,"eML_blk_kernel",0,-1,404);
-        _SFD_CV_INIT_EML_FOR(0,1,0,247,259,400);
-        _SFD_CV_INIT_EML_FOR(0,1,1,267,279,392);
+        _SFD_CV_INIT_EML(0,1,1,2,0,0,0,2,0,0,0);
+        _SFD_CV_INIT_EML_FCN(0,0,"eML_blk_kernel",0,-1,542);
+        _SFD_CV_INIT_EML_IF(0,1,0,241,262,-1,296);
+        _SFD_CV_INIT_EML_IF(0,1,1,301,322,-1,538);
+        _SFD_CV_INIT_EML_FOR(0,1,0,361,373,530);
+        _SFD_CV_INIT_EML_FOR(0,1,1,385,397,518);
 
         {
           unsigned int dimVector[1];
@@ -17475,7 +17643,7 @@ static void chart_debug_initialization(SimStruct *S, unsigned int
 
 static const char* sf_get_instance_specialization(void)
 {
-  return "zpdI4lpeEhcXCoU3wpKKiF";
+  return "2gHRGpErsncNcqXeiSfOCE";
 }
 
 static void sf_opaque_initialize_c3_Model_01(void *chartInstanceVar)
@@ -17650,10 +17818,10 @@ static void mdlSetWorkWidths_c3_Model_01(SimStruct *S)
   }
 
   ssSetOptions(S,ssGetOptions(S)|SS_OPTION_WORKS_WITH_CODE_REUSE);
-  ssSetChecksum0(S,(509121844U));
-  ssSetChecksum1(S,(1399266892U));
-  ssSetChecksum2(S,(3811018484U));
-  ssSetChecksum3(S,(3192431502U));
+  ssSetChecksum0(S,(2538769895U));
+  ssSetChecksum1(S,(2970172468U));
+  ssSetChecksum2(S,(3958128373U));
+  ssSetChecksum3(S,(1959649860U));
   ssSetmdlDerivatives(S, NULL);
   ssSetExplicitFCSSCtrl(S,1);
   ssSupportsMultipleExecInstances(S,1);

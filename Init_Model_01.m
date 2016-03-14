@@ -13,12 +13,13 @@ J_k = J;
 sig_tau = 2.5e-5; %rad^2/s^4
 sig_p = 1e-4;
 sig_theta = 1e-4;
+sig_f = 2e-6;
 
 %Initial conditions
 %Quaternions
-q_0_0 = 1.0;
+q_0_0 = 0.0;
 q_1_0 = 0.0;
-q_2_0 = 0.0;
+q_2_0 = 1.0;
 q_3_0 = 0.0;
 %omega
 om_x_0 = 0;
@@ -29,9 +30,9 @@ p_x_0 = p_x;
 p_y_0 = p_y;
 p_z_0 = p_z;
 %position
-r_x_0 = 680;
-r_y_0 = 0;
-r_z_0 = 632;
+r_x_0 = 975;
+r_y_0 = 10;
+r_z_0 = 26;
 %velocity
 r_dot_x_0 = 0;
 r_dot_y_0 = 0;
@@ -49,14 +50,14 @@ tau_2 = 0;
 tau_3 = 0;
 
 %Target point position
-rho = [0.2;0.1;0.05];
+rho = [0.0;0.0;0.0];
 %Target point orientation
-ita = [0.12;0.05;-0.15;0.98];
+ita = [0;0;0;1];
 
 %Measurement data
 
-Cov_r = 3e-3*eye(3,3);
-Cov_nu = 5e-5*eye(4,4);
+Cov_r = 3e-9*eye(3,3);
+Cov_nu = 5e-9*eye(4,4);
 
 %Orbital parameters
 n = 0.0012;
