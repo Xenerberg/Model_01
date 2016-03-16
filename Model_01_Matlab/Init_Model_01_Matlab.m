@@ -11,8 +11,8 @@ J = [1 0 0;0 (1-p_y)/(1+p_x) 0;0 0 (1+p_z)/(1-p_x)];
 J_k = J;
 
 sig_tau = 2.5e-5; %rad^2/s^4
-sig_p = 1e-4;
-sig_theta = 1e-5;
+sig_p = 1e-6;
+sig_theta = 1e-7;
 sig_f = 2e-6;
 
 %Initial conditions
@@ -40,14 +40,14 @@ r_dot_z_0 = 0;
 
 
 %Force perterubation
-e_force_x = 5e-6;
-e_force_y = 5e-6;
-e_force_z = 5e-6;
+e_force_x = 0;
+e_force_y = 0;
+e_force_z = 0;
 
 %Torque perturbation
-tau_1 = 5e-5;
-tau_2 = 5e-5;
-tau_3 = 5e-5;
+tau_1 = 0;
+tau_2 = 0;
+tau_3 = 0;
 
 %Target point position
 rho = [0;0;0];
