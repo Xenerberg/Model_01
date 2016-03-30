@@ -11,8 +11,8 @@ J = [1 0 0;0 (1-p_y)/(1+p_x) 0;0 0 (1+p_z)/(1-p_x)];
 J_k = J;
 
 sig_tau = 2.5e-5; %rad^2/s^4
-sig_p = 1e-6;
-sig_theta = 1e-7;
+sig_p = 1e-4;
+sig_theta = 1e-6;
 sig_f = 2e-6;
 
 %Initial conditions
@@ -26,9 +26,9 @@ om_x_0 = 0;
 om_y_0 = 0.0;
 om_z_0 = 0;
 %Inertial parameters
-p_x_0 = p_x;
-p_y_0 = p_y;
-p_z_0 = p_z;
+p_x_0 = 2;
+p_y_0 = -0.5;
+p_z_0 = -2;
 %position
 r_x_0 = 0;
 r_y_0 = 0;
@@ -52,6 +52,7 @@ tau_3 = 0;
 %Target point position
 rho = [0;0;0];
 %Target point orientation
+%ita = [0.12;0.05;-0.15;0.98];
 ita = [0;0;0;1];
 
 %Measurement data

@@ -42,20 +42,20 @@ function [ ] = fn_Main( )
     
     
     %Integrate Dynamic equations to see result;
-    dy_time = (0:0.1:80)';
+    dy_time = (0:0.1:200)';
     options = odeset('RelTol',1e-7,'AbsTol',1e-9*ones(23,1));
-    X_a_0_sim = load('./Model_01_Matlab/X_a_0');
-    [T,X_a] = ode45(@fn_StateSpace,[dy_time],X_a_0_sim.X_a_0,options);
+    X_a_0_sim = load('./Model_01_Matlab/X_a_0_est');
+    [T,X_a] = ode45(@fn_StateSpace,[dy_time],X_a_0_sim.X_a_0_sim,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(X_a(1,20:23)',0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 5e-3*randn(length(X_a),4));
+    Mu_noise = quatnormalize(Mu + 5e-2*randn(length(X_a),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
     
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
     end
-    Signal_vector = timeseries(r_c(1:3,:) + 3e-3*randn(length(r_c),3)',T,'Name','Signal');
+    Signal_vector = timeseries(r_c(1:3,:) + 3e-2*randn(length(r_c),3)',T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
     plot(T,X_a(:,1),T,X_a(:,2),T,X_a(:,3),T,X_a(:,4),'LineWidth',2);
@@ -87,14 +87,17 @@ function [ ] = fn_Main( )
     X_a_test = X_a_0; %Remove this later
     q_nominal = X_a_test(1:4,1);
     ita_nominal = X_a_test(20:23,1);
+    %P_post = 5*ones(21,21);
     P_post = eye(21,21);
-%     P_post(1:3,1:3) = 0.25*eye(3,3);
-%     P_post(4:6,4:6) = 0.25*eye(3,3);
-%     P_post(7:9,7:9) = 0.5*eye(3,3);   
-%     P_post(10:12,10:12) = 10*eye(3,3);
-%     P_post(13:15,13:15) = 0.001*eye(3,3);
-%     P_post(16:18,16:18) = 0.001*eye(3,3);
-%     P_post(19:21,19:21) = 0.05*eye(3,3);
+    %P_post(1:3,4:6) = exp(0.1)*eye(3,3);
+    %P_post(4:6,4:6) = 0.45*eye(3,3);
+    
+     P_post(1:3,1:3) = 0.5*eye(3,3);
+     P_post(7:9,7:9) = 0.005*eye(3,3);   
+     P_post(10:12,10:12) = 4*eye(3,3);
+     P_post(13:15,13:15) = eye(3,3);
+     P_post(16:18,16:18) = 0.04*eye(3,3);
+     P_post(19:21,19:21) = 0.005*eye(3,3);
 %     
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
@@ -274,7 +277,17 @@ function [ ] = fn_Main( )
     legend('\eta_1_est','\eta_2_est','\eta_3_est','\eta_0_est','\eta_1_true','\eta_2_true','\eta_3_true','\eta_0_true');
     ylabel('\eta');
     
-    end
+    figure;
+    subplot(3,1,1);
+    plot(dy_time,X_a_test(1:4,:)');hold all;
+    plot(dy_time,X_a(:,1:4),'LineStyle','-.');
+    legend('q_1 est','q_2 est','q_3 est','q_0 est','q_1 true','q_2 true','q_3 true','q_0 true');
+    ylabel('quaternion');
+    subplot(3,1,2);
+    plot(dy_time,X_a_test(11:13,:));hold all;
+    plot(dy_time,X_a(:,11:13),'LineStyle','-.');
+    legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
+end
 
 function[dy] = fn_StateSpace(~,X_a)
     global n;
