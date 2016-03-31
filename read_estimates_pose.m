@@ -99,22 +99,24 @@ for i_Count = 1:7:r
 end    
 reject = cell2mat(data(cell2mat(data(:,3))~=0));
 %plot data characteristics
-figure;
-subplot(2,2,1);
+b_plot = 0;
+if (b_plot == 1)
+    figure;
+    subplot(2,2,1);
 
-plot(cell2mat(data(:,2)));
-title('time-stamps w.r.t samples');
-subplot(2,2,2);
-stairs(cell2mat(data(:,3)),'Linewidth',3);
-title('flag state');
-subplot(2,2,3);
-hold all;
-title('position vector');
-vector = reshape(cell2mat(data(:,9)),3,110)';
-stem(cell2mat(data(:,2)),vector(:,1),'LineStyle','-.','MarkerEdgeColor','black','Marker','o','MarkerFaceColor','red');
-stem(cell2mat(data(:,2)),vector(:,2),'LineStyle','-.','MarkerEdgeColor','black','Marker','v','MarkerFaceColor','red');
-stem(cell2mat(data(:,2)),vector(:,3),'LineStyle','-.','MarkerEdgeColor','black','Marker','*','MarkerFaceColor','red');
-
+    plot(cell2mat(data(:,2)));
+    title('time-stamps w.r.t samples');
+    subplot(2,2,2);
+    stairs(cell2mat(data(:,3)),'Linewidth',3);
+    title('flag state');
+    subplot(2,2,3);
+    hold all;
+    title('position vector');
+    vector = reshape(cell2mat(data(:,9)),3,110)';
+    stem(cell2mat(data(:,2)),vector(:,1),'LineStyle','-.','MarkerEdgeColor','black','Marker','o','MarkerFaceColor','red');
+    stem(cell2mat(data(:,2)),vector(:,2),'LineStyle','-.','MarkerEdgeColor','black','Marker','v','MarkerFaceColor','red');
+    stem(cell2mat(data(:,2)),vector(:,3),'LineStyle','-.','MarkerEdgeColor','black','Marker','*','MarkerFaceColor','red');
+end
 %Check for data continuity
 % difference_time = diff(cell2mat(data(:,2)));
 % logical_index = difference_time < 0.09 | difference_time > 0.11;

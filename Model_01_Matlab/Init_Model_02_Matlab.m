@@ -6,7 +6,7 @@ i_zz = 5;
 p_x = (i_yy - i_zz)/i_xx;
 p_y = (i_zz - i_xx)/i_yy;
 p_z = (i_xx - i_yy)/i_zz;
-
+p = [p_x;p_y;p_z];
 
 sig_tau = 2.5e-5; %rad^2/s^4
 sig_p = 1e-4;
@@ -48,10 +48,10 @@ tau_2 = 0;
 tau_3 = 0;
 
 %Target point position
-rho = [0;0;0];
+rho = [0.2;0.1;0.05];
 %Target point orientation
-%ita = [0.12;0.05;-0.15;0.98];
-ita = [0;0;0;1];
+ita = [0.12;0.05;-0.15;0.98];
+%ita = [0;0;0;1];
 
 %Measurement data
 
@@ -64,7 +64,7 @@ n = 0.0012;
 %Simulation parameters
 global t_delta; t_delta = 0.1;
 
-X_a_0 = [q_1_0;q_2_0;q_3_0;q_0_0;om_x_0;om_y_0;om_z_0;p_x_0;p_y_0;p_z_0;r_x_0;r_y_0;r_z_0;r_dot_x_0;r_dot_y_0;r_dot_z_0;rho;ita];
+X_a_0 = [q_1_0;q_2_0;q_3_0;q_0_0;om_x_0;om_y_0;om_z_0;r_x_0;r_y_0;r_z_0;r_dot_x_0;r_dot_y_0;r_dot_z_0];
 
 
 
