@@ -16,7 +16,7 @@ function [ ] = fn_Main( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 100;        
+    global totalSimulationTime;totalSimulationTime = 30;        
     
     %%
      
@@ -70,14 +70,14 @@ function [ ] = fn_Main( )
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_Model_02,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(ita,0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 5e-2*randn(length(X_a),4));
+    Mu_noise = quatnormalize(Mu + 1e-1*randn(length(X_a),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,8:10)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*rho;
     end
-    Signal_vector = timeseries(r_c(1:3,:) + 3e-2*randn(length(r_c),3)',T,'Name','Signal');
+    Signal_vector = timeseries(r_c(1:3,:) + 3e-1*randn(length(r_c),3)',T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
     plot(T,X_a(:,1),T,X_a(:,2),T,X_a(:,3),T,X_a(:,4),'LineWidth',2);
@@ -113,9 +113,9 @@ function [ ] = fn_Main( )
     
     %Describe the state-error covariance initial matrix
     P_post = eye(12,12);    
-    P_post(1:3,1:3) = 0.5*eye(3,3);  
-    P_post(7:9,7:9) = 4*eye(3,3);
-    P_post(10:12,10:12) = eye(3,3);    
+%     P_post(1:3,1:3) = 0.5*eye(3,3);  
+%     P_post(7:9,7:9) = 4*eye(3,3);
+%     P_post(10:12,10:12) = eye(3,3);    
      
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
@@ -308,8 +308,8 @@ function[dy] = fn_StateSpace(~,X_a)
     q_omega_rel = [omega;0];%Check this for the Attitude Control of the Chaser
     psi = [p(1)*omega(2)*omega(3); p(2)*omega(1)*omega(3);p(3)*omega(1)*omega(2)];
     q_dot = 0.5*fn_CrossTensor(q_omega_rel,0)*q;
-    tau = [tau_1;tau_2;tau_3];
-    e_force = [e_force_x;e_force_y;e_force_z];
+    tau = [tau_1;tau_2;tau_3]*rand;
+    e_force = [e_force_x;e_force_y;e_force_z]*rand;
     omega_dot = psi + J_k*tau.*rand(3,1); %for static conditions
     rho_t_dot = zeros(3,1);
     r_ddot = fn_Compute_r_ddot(n,r,e_force,r_dot);
