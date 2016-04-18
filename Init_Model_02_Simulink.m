@@ -64,14 +64,19 @@ Cov_nu = 5e-3*eye(4,4);
 global t_delta; t_delta = 0.1;
 global t_Kalman; t_Kalman = 0.01;
 global t_Sim; t_Sim = 0.001;
-global totalSimulationTime;totalSimulationTime = 30;
+global totalSimulationTime;totalSimulationTime = 40;
 %Orbital parameters
 global parameter_gravitation;parameter_gravitation = 398.6005e12;
 global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
 
 X_a_0 = [q_1_0;q_2_0;q_3_0;q_0_0;om_x_0;om_y_0;om_z_0;r_x_0;r_y_0;r_z_0;r_dot_x_0;r_dot_y_0;r_dot_z_0];
 
-
+q = struct('q_1',q_1_0,'q_2',q_2_0,'q_3',q_3_0,'q_0',q_0_0);
+om = struct('omega_x',om_x_0,'omega_y',om_y_0,'omega_z',om_z_0);
+r = struct('r_x',r_x_0,'r_y',r_y_0,'r_z',r_z_0);
+r_dot = struct('r_x_dot',r_dot_x_0,'r_y_dot',r_dot_y_0,'r_z_dot',r_dot_z_0);
+X_a_0_struct = struct('q',q,'omega',om,'r',r,'r_dot',r_dot);
+X_a_0_bus = Simulink.Bus.createObject(X_a_0_struct);
 
 rho_c = [0;0;0.9];
 

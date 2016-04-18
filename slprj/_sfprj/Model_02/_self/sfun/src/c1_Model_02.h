@@ -17,9 +17,12 @@ typedef struct {
   uint32_T chartNumber;
   uint32_T instanceNumber;
   int32_T c1_sfEvent;
+  uint8_T c1_tp_S;
   boolean_T c1_isStable;
-  boolean_T c1_doneDoubleBufferReInit;
   uint8_T c1_is_active_c1_Model_02;
+  uint8_T c1_is_c1_Model_02;
+  uint8_T c1_doSetSimStateSideEffects;
+  const mxArray *c1_setSimStateSideEffectsInfo;
 } SFc1_Model_02InstanceStruct;
 
 #endif                                 /*typedef_SFc1_Model_02InstanceStruct*/

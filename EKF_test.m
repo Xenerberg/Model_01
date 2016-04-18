@@ -9,11 +9,11 @@ function [] = fn_main()
     K = zeros(1000,1);
     delta_t = 0.01;
     init = 1;
-    x_pre(1) = 10;
-    x_post(1) = 10;
+    x_pre(1) = 3;
+    x_post(1) = 3;
     sigma_x_pre(1) = 0.01;
     sigma_x_post(1) = 0.01;
-    Q = 0.1; R = 0.01;
+    Q = 0.1; R = 0.1;
     
     t = 0.0:delta_t:10;
     %z = cos(t);

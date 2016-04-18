@@ -16,7 +16,7 @@ function [ ] = fn_Main( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 30;        
+    global totalSimulationTime;totalSimulationTime = 40;        
     
     %%
      
@@ -119,6 +119,7 @@ function [ ] = fn_Main( )
      
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
+    test = zeros(6,length(v_time));
     %%
     %%Kalman filter implementation in an iterative loop
     tic;
@@ -158,7 +159,7 @@ function [ ] = fn_Main( )
         q_measured = Signal_Quaternion(iCount,:)';
         signal(4:7,1) = [q_measured(2:4); q_measured(1)];
         zk =fn_Create_obs(signal,rho_c,q_nominal,ita);
-        
+        test(:,iCount-1) = zk;
         
         %% Update phase
         Hk = fn_Create_H(q_nominal,rho);
