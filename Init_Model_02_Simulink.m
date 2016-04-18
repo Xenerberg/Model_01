@@ -64,7 +64,7 @@ Cov_nu = 5e-3*eye(4,4);
 global t_delta; t_delta = 0.1;
 global t_Kalman; t_Kalman = 0.01;
 global t_Sim; t_Sim = 0.001;
-global totalSimulationTime;totalSimulationTime = 40;
+global totalSimulationTime;totalSimulationTime = 200;
 %Orbital parameters
 global parameter_gravitation;parameter_gravitation = 398.6005e12;
 global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
