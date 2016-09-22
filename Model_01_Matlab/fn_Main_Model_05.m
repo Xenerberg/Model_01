@@ -8,6 +8,8 @@
 %Inputs: none
 %Outputs:none
 %Functionality: Initialize the system/Execute the Kalman filter/Display results
+%12-state vector
+%Implementing VB-EKF
 %Author: Hrishik Mishra
 
 function [ ] = fn_Main( )
@@ -16,7 +18,11 @@ function [ ] = fn_Main( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 60;        
+    global totalSimulationTime;totalSimulationTime = 150;     
+    %VB-EKF specific details
+    alpha = ones(6,1);
+    beta = ones(6,1);
+    dyn_param = 0.2;
     
     %%
      
@@ -35,49 +41,57 @@ function [ ] = fn_Main( )
         %frame
         Signal_vector = ts_coll.Signal_vector_2;
         Time = Signal_Transf.Time; Time = Time + 0.1;
-
-        h_figure_1 = figure('Name','Measurement details');
-        subplot(3,1,1);
-        h_stem = stem(Time,reshape(Signal_vector.Data(1,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','red');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(1,1,:),length(Time),1)));
-        ylabel('x-measurement frame');
-        subplot(3,1,2);
-        h_stem = stem(Time,reshape(Signal_vector.Data(2,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(2,1,:),length(Time),1)));
-        ylabel('y-measurement frame');
-        subplot(3,1,3);
-        h_stem = stem(Time,reshape(Signal_vector.Data(3,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(3,1,:),length(Time),1)));
-        ylabel('z-measurement frame');
+% 
+%         h_figure_1 = figure('Name','Measurement details');
+%         subplot(3,1,1);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(1,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','red');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(1,1,:),length(Time),1)));
+%         ylabel('x-measurement frame');
+%         subplot(3,1,2);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(2,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(2,1,:),length(Time),1)));
+%         ylabel('y-measurement frame');
+%         subplot(3,1,3);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(3,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(3,1,:),length(Time),1)));
+%         ylabel('z-measurement frame');
 
         %Convert measurement orientation to quaternions
         Signal_Quaternion = dcm2quat(Signal_Transf.Data);
-        h_figure = figure('Name','Orientation details');
-        subplot(2,1,1);
-        h1_stem = stem(Time,quatnorm(dcm2quat(Signal_Transf.Data)),'LineStyle','-.','Marker','o','MarkerFaceColor','red');
-        set(h1_stem, 'BaseValue',mean(quatnorm(dcm2quat(Signal_Transf.Data))));
+%         h_figure = figure('Name','Orientation details');
+%         subplot(2,1,1);
+%         h1_stem = stem(Time,quatnorm(dcm2quat(Signal_Transf.Data)),'LineStyle','-.','Marker','o','MarkerFaceColor','red');
+%         set(h1_stem, 'BaseValue',mean(quatnorm(dcm2quat(Signal_Transf.Data))));
     
     
     %1) Initialize the system with model parameters
-    Init_Model_02_Matlab;   
+    Init_Model_03_Matlab;   
     
     %Integrate Dynamic equations to see result;    (Simulated data)
     %%
     dy_time = (0:t_delta:totalSimulationTime)';
     Time = dy_time;
-    options = odeset('RelTol',1e-7,'AbsTol',1e-9*ones(13,1));
-    X_a_0_sim = load('./Model_01_Matlab/X_a_0_Model_02');
-    [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_Model_02,options);
+    options = odeset('RelTol',1e-7,'AbsTol',1e-9*ones(16,1));
+    X_a_0_sim = load('./Model_01_Matlab/X_a_0_Model_05');
+    [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_Model_05,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(ita,0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 1e-1*randn(length(X_a),4));
+    Mu_noise = zeros(size(Mu));
+    a = 500;
+    b = 600;
+    Mu_noise(1:a,:) = quatnormalize(Mu(1:a,:) + 1e-4*randn(a,4));
+    Mu_noise(a+1:b,:) = quatnormalize(Mu(a+1:b,:) + 1e-4*randn(b-a,4));
+    Mu_noise(b+1:end,:) = quatnormalize(Mu(b+1:end,:) + 1e-4*randn(length(X_a(b+1:end,1)),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
-        r_c(1:3,iCount) = X_a(iCount,8:10)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*rho;
+        r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*rho;
     end
-    Signal_vector = timeseries(r_c(1:3,:) + 3e-1*randn(length(r_c),3)',T,'Name','Signal');
+    r_c(:,1:a) = r_c(:,1:a) + 3e-3*randn(a,3)';
+    r_c(:,a+1:b) = r_c(:,a+1:b) + 3e-3*randn(b-a,3)';
+    r_c(:,b+1:end) = r_c(:,b+1:end) + 3e-3*randn(length(X_a(b+1:end,1)),3)';
+    Signal_vector = timeseries(r_c(1:3,:),T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
     plot(T,X_a(:,1),T,X_a(:,2),T,X_a(:,3),T,X_a(:,4),'LineWidth',2);
@@ -88,11 +102,11 @@ function [ ] = fn_Main( )
     legend('\omega_x','\omega_y','\omega_z');
     ylabel('Angular rate');
     subplot(2,2,3);
-    plot(T,X_a(:,8),T,X_a(:,9),T,X_a(:,10),'LineWidth',2);
+    plot(T,X_a(:,11),T,X_a(:,12),T,X_a(:,13),'LineWidth',2);
     legend('r_x', 'r_y', 'r_z');
     ylabel('position(m)');
     subplot(2,2,4);
-    plot(T,X_a(:,11),T,X_a(:,12),T,X_a(:,13),'LineWidth',2);
+    plot(T,X_a(:,14),T,X_a(:,15),T,X_a(:,16),'LineWidth',2);
     legend('r_x_dot', 'r_y_dot', 'r_z_dot');
     ylabel('velocity(m/sec)');
     %%
@@ -100,19 +114,19 @@ function [ ] = fn_Main( )
     %Variables Initialization
     %%
     X_a_init = X_a_0; %23-state vector to store the final output of Integration of dynamic equations (Predicted Result)
-    X_a_pre = zeros(13, length(Time));%Time-series of X_a_init (23-state vector)
+    X_a_pre = zeros(16, length(Time));%Time-series of X_a_init (16-state vector)
     X_a_itr = X_a_0;%23-state vector to store the output after Update-Stage (Estimated result)    
-    X_a_Estimated = zeros(13, length(Time));%Time-series of X_a_itr
+    X_a_Estimated = zeros(16, length(Time));%Time-series of X_a_itr
     X_a_Estimated(:,1) = X_a_itr;%Initialize the vector
-    X_pre = zeros(12,1);%21-state vector to store the output after Prediction-Stage
-    X_pre_estimate = zeros(12,length(Time));%Time-series of 21-state vector after Update-stage    
+    X_pre = zeros(15,1);%21-state vector to store the output after Prediction-Stage
+    X_pre_estimate = zeros(15,length(Time));%Time-series of 21-state vector after Update-stage    
     X_a_pre(:,1) = X_a_init;
     v_time = dy_time; %Time vector   
-    X_pre(4:12,1) = X_a_0(5:13,1);
+    X_pre(4:15,1) = X_a_0(5:16,1);
     
     
     %Describe the state-error covariance initial matrix
-    P_post = eye(12,12);    
+    P_post = eye(15,15);    
 %     P_post(1:3,1:3) = 0.5*eye(3,3);  
 %     P_post(7:9,7:9) = 4*eye(3,3);
 %     P_post(10:12,10:12) = eye(3,3);    
@@ -120,6 +134,7 @@ function [ ] = fn_Main( )
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
     test = zeros(6,length(v_time));
+    rankObs = zeros(length(v_time));
     %%
     %%Kalman filter implementation in an iterative loop
     tic;
@@ -137,17 +152,17 @@ function [ ] = fn_Main( )
         del_q = fn_CrossTensor(X_a_init(1:4,end),0)*[-q_nominal(1:3);q_nominal(4)];        
         %Set up X_pre for the Update-stage
         X_pre(1:3,end) = del_q(1:3); 
-        X_pre(4:12,end) = X_a_init(5:13,end);
+        X_pre(4:15,end) = X_a_init(5:16,end);
         
         
         %% State propagation               
-        Phi = fn_Create_Phi(X_a_itr, n, t_delta,p);
+        Phi = fn_Create_Phi(X_a_itr, n, t_delta,0);
         
         
-        %% Create Process-noise covariance matrix
-        Q_r = fn_Create_Q_r(Phi,X_a_itr, t_delta, sig_tau,sig_p,p);
+        %% Create Process-noise covariance matrix        
+        Q_r = fn_Create_Q_r(Phi,X_a_itr, t_delta, sig_tau,sig_p);
         Q_t  = fn_Create_Q_t_k(t_delta, n,sig_f);
-        Q = [Q_r, zeros(6,6);zeros(6,6),Q_t];
+        Q = [Q_r, zeros(9,6);zeros(6,9),Q_t];
 
         
         %% Create State-error Covariance for Prediction-Stage
@@ -159,16 +174,43 @@ function [ ] = fn_Main( )
         q_measured = Signal_Quaternion(iCount,:)';
         signal(4:7,1) = [q_measured(2:4); q_measured(1)];
         zk =fn_Create_obs(signal,rho_c,q_nominal,ita);
-        test(
+        test(:,iCount-1) = zk;
         
-        %% Update phase
         Hk = fn_Create_H(q_nominal,rho);
+        
+        rankObs(iCount) = rank(obsv(Phi,Hk));
+        %Set predicted alpha/beta values
+        alpha = dyn_param*alpha;
+        beta = dyn_param*beta;
+        betaprev = 0;
+        alpha = alpha + 0.5;
         Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
         K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
         h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre, rho);        
         residuals(iCount-1,:) = zk - h;
         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
-        
+        P_post = (eye(15,15)-K*Hk)*P_pre;
+        %VB iteration to converge to fixed values
+%         for vbCounter = 1:10
+%         %% Update phase
+%             
+%             %Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
+%             Sk = diag(beta./alpha);
+%             K = fn_ComputeKalmanGain(P_pre,Hk,Sk);                    
+%             residuals(iCount-1,:) = zk - h;
+%             X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+%             
+%             P_post = (eye(15,15)-K*Hk)*P_pre;
+%             post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount), rho);
+%             post_residual = zk - post_h;
+%             matA = Hk*P_post*Hk';
+%             beta = beta + 0.5*post_residual.^2 + 0.5*diag(matA);
+%             if norm(beta - betaprev) < 1e-6
+%                 fprintf('counter:%d\n',vbCounter);
+%                 break;                
+%             end
+%             betaprev = beta;
+%         end
         
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);
@@ -194,9 +236,9 @@ function [ ] = fn_Main( )
          
         %% Convert from intermediate to Estimated-states after Update-stage 
         q_est = fn_CrossTensor(del_q,0)*q_nominal;              
-        X_a_itr = [q_est;X_pre_estimate(4:12,iCount)];
+        X_a_itr = [q_est;X_pre_estimate(4:15,iCount)];
         X_a_Estimated(:,iCount) = X_a_itr;
-        P_post = (eye(12,12)-K*Hk)*P_pre;
+        
   
         
     end
@@ -206,7 +248,7 @@ function [ ] = fn_Main( )
     r_c_est = zeros(3,length(X_a_Estimated));
     for iCount = 1:length(X_a_Estimated)
        Mu_est(:,iCount) = fn_CrossTensor(ita,0)*X_a_Estimated(1:4,iCount);
-       r_c_est(1:3,iCount) = X_a_Estimated(8:10,iCount) + rho_c + fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*rho;
+       r_c_est(1:3,iCount) = X_a_Estimated(11:13,iCount) + rho_c + fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*rho;
     end
     
     %% Plot the details
@@ -256,34 +298,61 @@ function [ ] = fn_Main( )
     ylabel('q_3');
     
     figure;
-    subplot(2,1,1);
+    subplot(3,1,1);
     plot(dy_time,X_a_Estimated(5:7,:)');hold all;
     plot(dy_time,X_a(:,5:7),'LineStyle','-.');
     legend('x_est','y_est','z_est','x_true','y_true','z_true');
     ylabel('\omega');
     
-%     subplot(3,1,2);
-%     plot(dy_time,X_a_Estimated(8:10,:)');hold all;  
-%     plot(dy_time,X_a(:,8:10),'LineStyle','-.')
-%     legend('x_est','y_est','z_est','x_true','y_true','z_true');
-%     ylabel('p');
-    subplot(2,1,2);
-    plot(dy_time,X_a_Estimated(11:13,:)');hold all;
-    plot(dy_time,X_a(:,11:13),'LineStyle','-.');
+    subplot(3,1,2);
+    plot(dy_time,X_a_Estimated(8:10,:)');hold all;  
+    plot(dy_time,X_a(:,8:10),'LineStyle','-.')
+    legend('x_est','y_est','z_est','x_true','y_true','z_true');
+    ylabel('p');
+  
+    subplot(3,1,3);
+    plot(dy_time,X_a_Estimated(14:16,:)');hold all;
+    plot(dy_time,X_a(:,14:16),'LineStyle','-.');
     legend('v_x_est','v_y_est','v_z_est','v_x_true','v_y_true','v_z_true');
     ylabel('velocity');    
     
     
     figure;
-    subplot(3,1,1);
-    plot(dy_time,X_a_Estimated(1:4,:)');hold all;
-    plot(dy_time,X_a(:,1:4),'LineStyle','-.');
-    legend('q_1 est','q_2 est','q_3 est','q_0 est','q_1 true','q_2 true','q_3 true','q_0 true');
+    subplot(3,2,1);
+    plot(dy_time,X_a_Estimated(1,:)');hold all;
+    plot(dy_time,X_a(:,1),'LineStyle','-.');
+    legend('q_1 est','q_1 true');
     ylabel('quaternion');
-    subplot(3,1,2);
-    plot(dy_time,X_a_Estimated(8:10,:));hold all;
-    plot(dy_time,X_a(:,8:10),'LineStyle','-.');
+    subplot(3,2,2);    
+    plot(dy_time,X_a_Estimated(2,:)');hold all;
+    plot(dy_time,X_a(:,2),'LineStyle','-.');
+    legend('q_2 est','q_2 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,3);
+    plot(dy_time,X_a_Estimated(3,:)');hold all;
+    plot(dy_time,X_a(:,3),'LineStyle','-.');
+    legend('q_3 est','q_3 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,4);
+    
+    plot(dy_time,X_a_Estimated(4,:)');hold all;
+    plot(dy_time,X_a(:,4),'LineStyle','-.');
+    legend('q_0 est','q_0 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,5);
+    plot(dy_time,X_a_Estimated(11:13,:));hold all;
+    plot(dy_time,X_a(:,11:13),'LineStyle','-.');
     legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
+    
+    subplot(3,2,6);
+    stairs(rankObs);
+    xlabel('time');
+    ylabel('rank Obs');
+    ylim([0,25]);
+    
     
     
 end
@@ -299,9 +368,9 @@ function[dy] = fn_StateSpace(~,X_a)
     v_n = [0;0; n];
     q = X_a(1:4);
     omega = X_a(5:7);
-    p = [p_x;p_y;p_z];
-    r = X_a(8:10);
-    r_dot = X_a(11:13);
+    p = X_a(8:10);
+    r = X_a(11:13);
+    r_dot = X_a(14:16);
     rho_t = rho;
     ita_t = ita;
     
@@ -314,9 +383,10 @@ function[dy] = fn_StateSpace(~,X_a)
     omega_dot = psi + J_k*tau.*rand(3,1); %for static conditions
     rho_t_dot = zeros(3,1);
     r_ddot = fn_Compute_r_ddot(n,r,e_force,r_dot);
+    p_dot = zeros(3,1);
     %r_dot = zeros(3,1);
     %r_ddot = zeros(3,1);
-    dy = [q_dot;omega_dot;r_dot;r_ddot];
+    dy = [q_dot;omega_dot;p_dot;r_dot;r_ddot];
 end
 
 %Function: fn_Compute_r_ddot()
@@ -350,10 +420,11 @@ end
 %Outputs: [Phi] (State-propagation Matrix)
 %Functionality: Generates the State Propagation matrix
 %Author: Hrishik Mishra
-function[Phi] = fn_Create_Phi(X_a,n,t_delta,p)
+function[Phi] = fn_Create_Phi(X_a,n,t_delta,~)
+    p = X_a(8:10);
     Phi_t = fn_Create_Phi_t(n,t_delta);
     Phi_r = fn_Create_Phi_r(X_a,p);
-    Phi = [Phi_r, zeros(6,6);zeros(6,6),Phi_t];
+    Phi = [Phi_r, zeros(9,6);zeros(6,9),Phi_t];
 
 end
 %Create state propagation matrix of the whole system
@@ -368,8 +439,9 @@ function [Phi_r] = fn_Create_Phi_r(X_a,p)
     global t_delta;    
     omega = X_a(5:7);
     M = fn_Create_M(p,omega);   
+    N = fn_Create_N(omega);
     
-    A = [-fn_VectorToSkewSymmetricTensor(omega),0.5*eye(3,3);zeros(3,3),M];
+    A = [-fn_VectorToSkewSymmetricTensor(omega),0.5*eye(3,3),zeros(3,3);zeros(3,3),M,N;zeros(3,3),zeros(3,3),zeros(3,3)];
     Phi_r = expm(A*t_delta);
 %     phi_r11 = fn_Create_phi_r11(omega,t_delta);
 %     phi_r12 = fn_Create_phi_r12(omega,M,t_delta);
@@ -576,12 +648,14 @@ end
 %Outputs: Q_r (Rotation component Process noise)
 %Functionality: Generates Q_r
 %Author: Hrishik Mishra
-function Q_r = fn_Create_Q_r(Phi,X, t_delta, tau,sig_p,p)
+function Q_r = fn_Create_Q_r(Phi,X, t_delta, tau,sig_p)
+    p = X(8:10,1);
     J = fn_Create_J(p);
-    Q_r11 = 0.25*fn_Create_Q_r11(Phi(1:3,4:6), J, t_delta, tau);
-    Q_r12 = 0.5*fn_Create_Q_r12(Phi(1:3,4:6),Phi(4:6,4:6),J,t_delta,tau);
+    Q_r11 = fn_Create_Q_r11(Phi(1:3,4:6), J, t_delta, tau);
+    Q_r12 = fn_Create_Q_r12(Phi(1:3,4:6),Phi(4:6,4:6),J,t_delta,tau);
     Q_r22 = fn_Create_Q_r22(Phi(4:6,4:6),J,t_delta,tau);
-    Q_r = [Q_r11, Q_r12;Q_r12' Q_r22];
+    Q_p =  sig_p*eye(3,3);
+    Q_r = [Q_r11, Q_r12, zeros(3,3);Q_r12' Q_r22 zeros(3,3);zeros(3,3) zeros(3,3) Q_p];
     %check if it is actually phi_r12 or phi_r11
     function Q_r11 = fn_Create_Q_r11(phi_r12, J, t_delta, tau)
         Q_r11 = tau*phi_r12*J^2*phi_r12'*t_delta; 
@@ -630,7 +704,7 @@ end
 %Author: Hrishik Mishra
 function H = fn_Create_H(q_nominal, rho)    
     Matrix_1 = fn_Create_del_h1(q_nominal,rho);       
-    H = [Matrix_1;eye(3,3), zeros(3,9)];
+    H = [Matrix_1;eye(3,3), zeros(3,12)];
     function Matrix_1 = fn_Create_del_h1(q,rho_t_k)
         q_0 = q(4);
         q_v = q(1:3);
@@ -638,7 +712,7 @@ function H = fn_Create_H(q_nominal, rho)
         R = (2*q_0^2 - 1)*eye(3,3) + 2*q_0*Q_v + 2*(q_v)*(q_v)';
 
         first = -2*R*fn_VectorToSkewSymmetricTensor(rho_t_k);
-        Matrix_1 = [first, zeros(3,3),eye(3,3),zeros(3,3)];
+        Matrix_1 = [first, zeros(3,6),eye(3,3),zeros(3,3)];
     end    
 end
 
@@ -702,7 +776,7 @@ end
 %Author: Hrishik Mishra
 function h = fn_Create_h(q,X,rho)
 %
-    r = X(7:9,1);
+    r = X(10:12,1);
     rho_t = rho;
     del_q_v = X(1:3,1);        
     del_q_0 = sqrt(1 - norm(del_q_v));    

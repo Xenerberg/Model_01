@@ -27,36 +27,36 @@ function [ ] = fn_Main_Model_01( )
         %characteristics
         %Author: Hrishik Mishra
         %Measurements    
-        (read_estimates_pose); %Read the Pose data from the file provided
+        %(read_estimates_pose); %Read the Pose data from the file provided
         %Signal_Transf = Transformation (DCM) between Camera-frame and
         %Grasping-frame
-        Signal_Transf = ts_coll.Signal_Transf_2;
+        %Signal_Transf = ts_coll.Signal_Transf_2;
         %Signal_vector = Position vector between Camera-frame and Grasping-
         %frame
-        Signal_vector = ts_coll.Signal_vector_2;
-        Time = Signal_Transf.Time; Time = Time + 0.1;
+        %Signal_vector = ts_coll.Signal_vector_2;
+        %Time = Signal_Transf.Time; Time = Time + 0.1;
 
-        h_figure_1 = figure('Name','Measurement details');
-        subplot(3,1,1);
-        h_stem = stem(Time,reshape(Signal_vector.Data(1,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','red');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(1,1,:),length(Time),1)));
-        ylabel('x-measurement frame');
-        subplot(3,1,2);
-        h_stem = stem(Time,reshape(Signal_vector.Data(2,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(2,1,:),length(Time),1)));
-        ylabel('y-measurement frame');
-        subplot(3,1,3);
-        h_stem = stem(Time,reshape(Signal_vector.Data(3,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
-        set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(3,1,:),length(Time),1)));
-        ylabel('z-measurement frame');
-
-        %Convert measurement orientation to quaternions
-        Signal_Quaternion = dcm2quat(Signal_Transf.Data);
-        h_figure = figure('Name','Orientation details');
-        subplot(2,1,1);
-        h1_stem = stem(Time,quatnorm(dcm2quat(Signal_Transf.Data)),'LineStyle','-.','Marker','o','MarkerFaceColor','red');
-        set(h1_stem, 'BaseValue',mean(quatnorm(dcm2quat(Signal_Transf.Data))));
-    
+%         h_figure_1 = figure('Name','Measurement details');
+%         subplot(3,1,1);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(1,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','red');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(1,1,:),length(Time),1)));
+%         ylabel('x-measurement frame');
+%         subplot(3,1,2);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(2,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(2,1,:),length(Time),1)));
+%         ylabel('y-measurement frame');
+%         subplot(3,1,3);
+%         h_stem = stem(Time,reshape(Signal_vector.Data(3,1,:),length(Time),1),'Marker','o','LineStyle','-.','MarkerFaceColor','green');
+%         set(h_stem,'BaseValue',mean(reshape(Signal_vector.Data(3,1,:),length(Time),1)));
+%         ylabel('z-measurement frame');
+% 
+%         %Convert measurement orientation to quaternions
+%         Signal_Quaternion = dcm2quat(Signal_Transf.Data);
+%         h_figure = figure('Name','Orientation details');
+%         subplot(2,1,1);
+%         h1_stem = stem(Time,quatnorm(dcm2quat(Signal_Transf.Data)),'LineStyle','-.','Marker','o','MarkerFaceColor','red');
+%         set(h1_stem, 'BaseValue',mean(quatnorm(dcm2quat(Signal_Transf.Data))));
+%     
     
     %1) Initialize the system with model parameters
     Init_Model_01_Matlab;   
@@ -73,6 +73,7 @@ function [ ] = fn_Main_Model_01( )
     Mu_noise = quatnormalize(Mu + 5e-2*randn(length(X_a),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
+    
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
@@ -101,7 +102,8 @@ function [ ] = fn_Main_Model_01( )
     %%
     X_a_init = X_a_0; %23-state vector to store the final output of Integration of dynamic equations (Predicted Result)
     X_a_pre = zeros(23, length(Time));%Time-series of X_a_init (23-state vector)
-    X_a_itr = X_a_0;%23-state vector to store the output after Update-Stage (Estimated result)    
+    X_a_itr = X_a_0;%23-state vector to store the output after Update-Stage (Estimated result)
+    %X_a_itr = X_a_0_sim.X_a_0_sim;
     X_a_Estimated = zeros(23, length(Time));%Time-series of X_a_itr
     X_a_Estimated(:,1) = X_a_itr;%Initialize the vector
     X_pre = zeros(21,1);%21-state vector to store the output after Prediction-Stage
@@ -113,15 +115,13 @@ function [ ] = fn_Main_Model_01( )
     
     %Describe the state-error covariance initial matrix
     P_post = eye(21,21);    
-    P_post(1:3,1:3) = 0.5*eye(3,3);
-    P_post(7:9,7:9) = 0.005*eye(3,3);   
-    P_post(10:12,10:12) = 4*eye(3,3);
-    P_post(13:15,13:15) = eye(3,3);
-    P_post(16:18,16:18) = 0.04*eye(3,3);
-    P_post(19:21,19:21) = 0.005*eye(3,3);
+%     P_post(7:9,7:9) = 0.5*eye(3,3);   
+%     P_post(16:18,16:18) = 0.5*eye(3,3);
+%     P_post(19:21,19:21) = 0.5*eye(3,3);
      
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
+    rankObs = zeros(length(v_time));
     %%
     %%Kalman filter implementation in an iterative loop
     tic;
@@ -167,7 +167,10 @@ function [ ] = fn_Main_Model_01( )
         signal(1:3,1) = Signal_vector.Data(:,:,iCount); 
         q_measured = Signal_Quaternion(iCount,:)';
         signal(4:7,1) = [q_measured(2:4); q_measured(1)];
+        %Set true measurements
         zk =fn_Create_obs(signal,rho_c,q_nominal,ita_nominal);
+        %Set zero measurements
+        %zk = fn_Create_obs([zeros(6,1);1],rho_c,q_nominal,ita_nominal);
         
         
         %% Update phase
@@ -178,7 +181,7 @@ function [ ] = fn_Main_Model_01( )
         residuals(iCount-1,:) = zk - h;
         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
         
-        
+        rankObs(iCount) = rank(obsv(Phi,Hk));
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);
         if ( norm(del_q_v) > 1)
@@ -316,15 +319,40 @@ function [ ] = fn_Main_Model_01( )
     ylabel('\eta');
     
     figure;
-    subplot(3,1,1);
-    plot(dy_time,X_a_Estimated(1:4,:)');hold all;
-    plot(dy_time,X_a(:,1:4),'LineStyle','-.');
-    legend('q_1 est','q_2 est','q_3 est','q_0 est','q_1 true','q_2 true','q_3 true','q_0 true');
+    subplot(3,2,1);
+    plot(dy_time,X_a_Estimated(1,:)');hold all;
+    plot(dy_time,X_a(:,1),'LineStyle','-.');
+    legend('q_1 est','q_1 true');
     ylabel('quaternion');
-    subplot(3,1,2);
+    subplot(3,2,2);    
+    plot(dy_time,X_a_Estimated(2,:)');hold all;
+    plot(dy_time,X_a(:,2),'LineStyle','-.');
+    legend('q_2 est','q_2 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,3);
+    plot(dy_time,X_a_Estimated(3,:)');hold all;
+    plot(dy_time,X_a(:,3),'LineStyle','-.');
+    legend('q_3 est','q_3 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,4);
+    
+    plot(dy_time,X_a_Estimated(4,:)');hold all;
+    plot(dy_time,X_a(:,4),'LineStyle','-.');
+    legend('q_0 est','q_0 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,5);
     plot(dy_time,X_a_Estimated(11:13,:));hold all;
     plot(dy_time,X_a(:,11:13),'LineStyle','-.');
     legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
+    
+    subplot(3,2,6);
+    stairs(rankObs);
+    xlabel('time');
+    ylabel('rank Obs');
+    ylim([0,25]);
     
     
 end
@@ -624,7 +652,7 @@ end
 %Functionality: Generates Q_r
 %Author: Hrishik Mishra
 function Q_r = fn_Create_Q_r(Phi,X, t_delta, tau,sig_p)
-    p = X(7:9,1);
+    p = X(8:10,1);
     J = fn_Create_J(p);
     Q_r11 = fn_Create_Q_r11(Phi(1:3,4:6), J, t_delta, tau);
     Q_r12 = fn_Create_Q_r12(Phi(1:3,4:6),Phi(4:6,4:6),J,t_delta,tau);

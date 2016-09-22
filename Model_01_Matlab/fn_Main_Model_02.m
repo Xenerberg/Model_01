@@ -124,7 +124,7 @@ function [ ] = fn_Main( )
 %     P_post(1:3,1:3) = 0.5*eye(3,3);  
 %     P_post(7:9,7:9) = 4*eye(3,3);
 %     P_post(10:12,10:12) = eye(3,3);    
-     
+    rankObs = zeros(length(v_time));
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
     test = zeros(6,length(v_time));
@@ -177,7 +177,7 @@ function [ ] = fn_Main( )
         residuals(iCount-1,:) = zk - h;
         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
         
-        
+        rankObs(iCount) = rank(obsv(Phi,Hk));
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);
         if ( norm(del_q_v) > 1)
@@ -270,6 +270,8 @@ function [ ] = fn_Main( )
     legend('x_est','y_est','z_est','x_true','y_true','z_true');
     ylabel('\omega');
     
+    
+    
 %     subplot(3,1,2);
 %     plot(dy_time,X_a_Estimated(8:10,:)');hold all;  
 %     plot(dy_time,X_a(:,8:10),'LineStyle','-.')
@@ -283,15 +285,40 @@ function [ ] = fn_Main( )
     
     
     figure;
-    subplot(3,1,1);
-    plot(dy_time,X_a_Estimated(1:4,:)');hold all;
-    plot(dy_time,X_a(:,1:4),'LineStyle','-.');
-    legend('q_1 est','q_2 est','q_3 est','q_0 est','q_1 true','q_2 true','q_3 true','q_0 true');
+   subplot(3,2,1);
+    plot(dy_time,X_a_Estimated(1,:)');hold all;
+    plot(dy_time,X_a(:,1),'LineStyle','-.');
+    legend('q_1 est','q_1 true');
     ylabel('quaternion');
-    subplot(3,1,2);
-    plot(dy_time,X_a_Estimated(8:10,:));hold all;
-    plot(dy_time,X_a(:,8:10),'LineStyle','-.');
+    subplot(3,2,2);    
+    plot(dy_time,X_a_Estimated(2,:)');hold all;
+    plot(dy_time,X_a(:,2),'LineStyle','-.');
+    legend('q_2 est','q_2 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,3);
+    plot(dy_time,X_a_Estimated(3,:)');hold all;
+    plot(dy_time,X_a(:,3),'LineStyle','-.');
+    legend('q_3 est','q_3 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,4);
+    
+    plot(dy_time,X_a_Estimated(4,:)');hold all;
+    plot(dy_time,X_a(:,4),'LineStyle','-.');
+    legend('q_0 est','q_0 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,5);
+    plot(dy_time,X_a_Estimated(11:13,:));hold all;
+    plot(dy_time,X_a(:,11:13),'LineStyle','-.');
     legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
+    
+    subplot(3,2,6);
+    stairs(rankObs);
+    xlabel('time');
+    ylabel('rank Obs');
+    ylim([0,25]);
     
     
 end
