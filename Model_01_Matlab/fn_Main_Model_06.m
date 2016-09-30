@@ -18,7 +18,7 @@ function [ ] = fn_Main( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 200;     
+    global totalSimulationTime;totalSimulationTime = 80;     
     %VB-EKF specific details
     alpha = ones(6,1);
     beta = ones(6,1);
@@ -177,8 +177,10 @@ function [ ] = fn_Main( )
         
        %Convert to quaternion
        a_g = X_post(1:3,iCount);
-       rho_q = fn_CrossTensor([a_g;2],0)*q_nominal;
-       q = rho_q/norm(rho_q); 
+       %rho_q = fn_CrossTensor([a_g;2],0)*q_nominal;
+       del_q = [a_g;2]/(sqrt(4+dot(a_g,a_g)));
+       %q = rho_q/norm(rho_q); 
+       q = fn_CrossTensor(del_q,0)*q_nominal;
        X_a_Estimated(1:4,iCount) = q;
        X_a_Estimated(5:13,iCount) = X_post(4:12,iCount);
        %Reset quat vector
@@ -261,16 +263,38 @@ function [ ] = fn_Main( )
     
     
     figure;
-    subplot(3,1,1);
-    plot(dy_time,X_a_Estimated(1:4,:)');hold all;
-    plot(dy_time,X_a(:,1:4),'LineStyle','-.');
-    legend('q_1 est','q_2 est','q_3 est','q_0 est','q_1 true','q_2 true','q_3 true','q_0 true');
+    subplot(3,2,1);
+    plot(dy_time,X_a_Estimated(1,:)');hold all;
+    plot(dy_time,X_a(:,1),'LineStyle','-.');
+    legend('q_1 est','q_1 true');
     ylabel('quaternion');
-    subplot(3,1,2);
-    plot(dy_time,X_a_Estimated(8:10,:));hold all;
-    plot(dy_time,X_a(:,8:10),'LineStyle','-.');
+    subplot(3,2,2);    
+    plot(dy_time,X_a_Estimated(2,:)');hold all;
+    plot(dy_time,X_a(:,2),'LineStyle','-.');
+    legend('q_2 est','q_2 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,3);
+    plot(dy_time,X_a_Estimated(3,:)');hold all;
+    plot(dy_time,X_a(:,3),'LineStyle','-.');
+    legend('q_3 est','q_3 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,4);
+    
+    plot(dy_time,X_a_Estimated(4,:)');hold all;
+    plot(dy_time,X_a(:,4),'LineStyle','-.');
+    legend('q_0 est','q_0 true');
+    ylabel('quaternion');
+    
+    subplot(3,2,5);
+    plot(dy_time,X_a_Estimated(11:13,:));hold all;
+    plot(dy_time,X_a(:,11:13),'LineStyle','-.');
     legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
     
+    subplot(3,2,6);
+    plot(dy_time(2:end),residuals(:,4:6)');hold all;
+    %legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
     
 end
 
