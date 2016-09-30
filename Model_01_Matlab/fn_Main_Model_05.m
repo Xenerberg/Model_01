@@ -8,7 +8,7 @@
 %Inputs: none
 %Outputs:none
 %Functionality: Initialize the system/Execute the Kalman filter/Display results
-%12-state vector
+%15-state vector (including inertias)
 %Implementing VB-EKF
 %Author: Hrishik Mishra
 
@@ -72,6 +72,7 @@ function [ ] = fn_Main( )
     dy_time = (0:t_delta:totalSimulationTime)';
     Time = dy_time;
     options = odeset('RelTol',1e-7,'AbsTol',1e-9*ones(16,1));
+    %X_a_0_sim = load('./Model_01_Matlab/X_a_0_Model_05_Unobs');
     X_a_0_sim = load('./Model_01_Matlab/X_a_0_Model_05');
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_Model_05,options);
     Signal_Quaternion = [];
@@ -80,7 +81,7 @@ function [ ] = fn_Main( )
     a = 500;
     b = 600;
     Mu_noise(1:a,:) = quatnormalize(Mu(1:a,:) + 1e-4*randn(a,4));
-    Mu_noise(a+1:b,:) = quatnormalize(Mu(a+1:b,:) + 1e-4*randn(b-a,4));
+    Mu_noise(a+1:b,:) = quatnormalize(Mu(a+1:b,:) + 1e-1*randn(b-a,4));
     Mu_noise(b+1:end,:) = quatnormalize(Mu(b+1:end,:) + 1e-4*randn(length(X_a(b+1:end,1)),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
@@ -89,7 +90,7 @@ function [ ] = fn_Main( )
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*rho;
     end
     r_c(:,1:a) = r_c(:,1:a) + 3e-3*randn(a,3)';
-    r_c(:,a+1:b) = r_c(:,a+1:b) + 3e-3*randn(b-a,3)';
+    r_c(:,a+1:b) = r_c(:,a+1:b) + 3e-1*randn(b-a,3)';
     r_c(:,b+1:end) = r_c(:,b+1:end) + 3e-3*randn(length(X_a(b+1:end,1)),3)';
     Signal_vector = timeseries(r_c(1:3,:),T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
@@ -134,7 +135,7 @@ function [ ] = fn_Main( )
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
     test = zeros(6,length(v_time));
-    rankObs = zeros(length(v_time));
+    rankObs = zeros(length(v_time),1);
     %%
     %%Kalman filter implementation in an iterative loop
     tic;
@@ -177,40 +178,40 @@ function [ ] = fn_Main( )
         test(:,iCount-1) = zk;
         
         Hk = fn_Create_H(q_nominal,rho);
-        
+        h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre, rho);
         rankObs(iCount) = rank(obsv(Phi,Hk));
         %Set predicted alpha/beta values
         alpha = dyn_param*alpha;
         beta = dyn_param*beta;
         betaprev = 0;
         alpha = alpha + 0.5;
-        Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
-        K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
-        h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre, rho);        
-        residuals(iCount-1,:) = zk - h;
-        X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
-        P_post = (eye(15,15)-K*Hk)*P_pre;
+%         Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
+%         K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
+%                 
+%         residuals(iCount-1,:) = zk - h;
+%         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+%         P_post = (eye(15,15)-K*Hk)*P_pre;
         %VB iteration to converge to fixed values
-%         for vbCounter = 1:10
-%         %% Update phase
-%             
-%             %Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
-%             Sk = diag(beta./alpha);
-%             K = fn_ComputeKalmanGain(P_pre,Hk,Sk);                    
-%             residuals(iCount-1,:) = zk - h;
-%             X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
-%             
-%             P_post = (eye(15,15)-K*Hk)*P_pre;
-%             post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount), rho);
-%             post_residual = zk - post_h;
-%             matA = Hk*P_post*Hk';
-%             beta = beta + 0.5*post_residual.^2 + 0.5*diag(matA);
-%             if norm(beta - betaprev) < 1e-6
-%                 fprintf('counter:%d\n',vbCounter);
-%                 break;                
-%             end
-%             betaprev = beta;
-%         end
+        for vbCounter = 1:10
+        %% Update phase
+            
+            %Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
+            Sk = diag(beta./alpha);
+            K = fn_ComputeKalmanGain(P_pre,Hk,Sk);                    
+            residuals(iCount-1,:) = zk - h; 
+            X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+            
+            P_post = (eye(15,15)-K*Hk)*P_pre;
+            post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount), rho);
+            post_residual = zk - post_h;
+            matA = Hk*P_post*Hk';
+            beta = beta + 0.5*post_residual.^2 + 0.5*diag(matA);
+            if norm(beta - betaprev) < 1e-6
+                fprintf('counter:%d\n',vbCounter);
+                break;                
+            end
+            betaprev = beta;
+        end
         
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);

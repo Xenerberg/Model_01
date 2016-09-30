@@ -12,7 +12,8 @@
 
 function [ ] = fn_Main( )
     %Implementation of the Motion parameter estimation
-    clc; close all;clear all;
+    clc; %close all;
+    clear all;
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
