@@ -22,9 +22,9 @@ q_1_0 = 0;
 q_2_0 = 0;
 q_3_0 = 0;
 %omega
-om_x_0 = 0.1;
-om_y_0 = -1.0;
-om_z_0 = 1;
+om_x_0 = 0.0;
+om_y_0 = 0.0;
+om_z_0 = 0.0;
 %Inertial parameters
 %Incorrect values
 p_x_0 = 0;%2;
@@ -57,11 +57,11 @@ tau_3 = 0;
 
 %Target point position
 %Set incorrect value
-%rho = [.2;.3;.4];
-rho = [0.150000000000000;0.200000000000000;0.100000000000000];
+rho = [0;0;0];
+%rho = [0.14;0.2;0.55];
 
 
-%Target point orientation
+%%Target point orientation
 %ita =   [0.1029;0.1029; -0.2059; 0.9677];
 ita = [0;0;0;1];
 

@@ -17,7 +17,7 @@ function [ ] = fn_Main( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 100;        
+    global totalSimulationTime;totalSimulationTime = 60;        
     
     %%
      
@@ -71,7 +71,7 @@ function [ ] = fn_Main( )
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_Model_02,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(ita,0)*X_a(:,1:4)')';
-        Mu_noise = zeros(size(Mu));
+    Mu_noise = zeros(size(Mu));
     a = 500;
     b = 600;
     Mu_noise(1:a,:) = quatnormalize(Mu(1:a,:) + 1e-4*randn(a,4));
@@ -119,7 +119,9 @@ function [ ] = fn_Main( )
     v_time = dy_time; %Time vector   
     X_pre(4:12,1) = X_a_0(5:13,1);
     
-    
+    unobs_index = zeros(length(v_time),1);
+    est_cond = zeros(length(v_time),1);
+    W_Gram = zeros(12,12);
     %Describe the state-error covariance initial matrix
     P_post = eye(12,12);    
 %     P_post(1:3,1:3) = 0.5*eye(3,3);  
@@ -173,12 +175,33 @@ function [ ] = fn_Main( )
         %% Update phase
         Hk = fn_Create_H(q_nominal,rho);
         Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
-        K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
+        %Bump up EKF        
+        Sk_new = Sk + Hk*P_pre*Hk';
+        K = fn_ComputeKalmanGain(P_pre,Hk,Sk_new);
+        %K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
         h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre, rho);        
         residuals(iCount-1,:) = zk - h;
         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
         
-        rankObs(iCount) = rank(obsv(Phi,Hk));
+         W_Gram = Phi'*W_Gram*Phi + Hk'*Hk;
+        [~,p_chol] = chol(W_Gram);        
+        eig_W = eig(W_Gram);
+        sing_values = sqrt(eig_W);        
+        if p_chol > 0
+           fprintf('unobservable at: %d\n', iCount); 
+           unobs_index(iCount) = NaN;
+           est_cond(iCount) = NaN;          
+        else
+            unobs_index(iCount) = 1/min(sing_values);%Large makes noise affected
+            est_cond(iCount) = max(sing_values)/min(sing_values);%initial condition sensitivity
+            if log(est_cond(iCount)) > 10
+               %reset
+               %P_post = eye(21,21);
+               %W_Gram = zeros(21,21);
+               %continue;
+            end
+        end
+            
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);
         if ( norm(del_q_v) > 1)
@@ -320,6 +343,12 @@ function [ ] = fn_Main( )
     xlabel('time');
     ylabel('rank Obs');
     ylim([0,25]);
+    
+    figure;
+    subplot(2,1,1);
+    plot(log(unobs_index));
+    subplot(2,1,2);
+    plot(log(est_cond));
     
     
 end

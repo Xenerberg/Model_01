@@ -69,15 +69,27 @@ function [ ] = fn_Main_Model_01( )
     X_a_0_sim = load('./Model_01_Matlab/X_a_0_est');
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_sim,options);
     Signal_Quaternion = [];
+    a = 50;
+    b = 60;    
     Mu = (fn_CrossTensor(X_a(1,20:23)',0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 5e-2*randn(length(X_a),4));
-    Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
-    Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
-    
+    Mu_noise = zeros(size(Mu));
+    Mu_noise(1:a,:) = (Mu(1:a,:) + 1e-4*randn(a,4));
+    Mu_noise(a+1:b,:) = (Mu(a+1:b,:) + 1e-4*randn(b-a,4));
+    Mu_noise(b+1:end,:) = (Mu(b+1:end,:) + 1e-4*randn(length(X_a(b+1:end,1)),4));   
+    rho_t_b = zeros(3,length(dy_time));
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
-        r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
+        R_q = fn_CreateRotationMatrix(X_a(iCount,1:4)');
+        r_c(1:3,iCount) = X_a(iCount,8:10)' + rho_c + R_q*rho;
+        Mu_noise(iCount,:) = Mu_noise(iCount,:)/norm(Mu_noise(iCount,:));
+        %Compute grasping frame in base
+        rho_t_b(:,iCount) = R_q*rho;
     end
+    Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
+    Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
+    r_c(:,1:a) = r_c(:,1:a) + 3e-3*randn(a,3)';
+    r_c(:,a+1:b) = r_c(:,a+1:b) + 3e-3*randn(b-a,3)';
+    r_c(:,b+1:end) = r_c(:,b+1:end) + 3e-3*randn(length(X_a(b+1:end,1)),3)';
     Signal_vector = timeseries(r_c(1:3,:) + 3e-2*randn(length(r_c),3)',T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
@@ -124,6 +136,9 @@ function [ ] = fn_Main_Model_01( )
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
     rankObs = zeros(length(v_time));
+    unobs_index = zeros(length(v_time),1);
+    est_cond = zeros(length(v_time),1);
+    W_Gram = zeros(21,21);
     %%
     %%Kalman filter implementation in an iterative loop
     tic;
@@ -183,6 +198,26 @@ function [ ] = fn_Main_Model_01( )
         residuals(iCount-1,:) = zk - h;
         X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
         
+        W_Gram = Phi'*W_Gram*Phi + Hk'*Hk;
+        [~,p_chol] = chol(W_Gram);        
+        eig_W = eig(W_Gram);
+        sing_values = sqrt(eig_W);        
+        if p_chol > 0
+           fprintf('unobservable at: %d\n', iCount); 
+           unobs_index(iCount) = NaN;
+           est_cond(iCount) = NaN;          
+        else
+            unobs_index(iCount) = 1/min(sing_values);%Large makes noise affected
+            est_cond(iCount) = max(sing_values)/min(sing_values);%initial condition sensitivity
+            if log(est_cond(iCount)) > 10
+               %reset
+               %P_post = eye(21,21);
+               %W_Gram = zeros(21,21);
+               %continue;
+            end
+        end
+            
+       
         %rankObs(iCount) = rank(obsv(Phi,Hk));
         %% Error/Warning checks in computed Quaternions
         del_q_v = X_pre_estimate(1:3,iCount);
@@ -232,6 +267,7 @@ function [ ] = fn_Main_Model_01( )
         X_a_itr = [q_est;X_pre_estimate(4:18,iCount);ita_est];
         X_a_Estimated(:,iCount) = X_a_itr;
         P_post = (eye(21,21)-K*Hk)*P_pre;
+        
   
         
     end
@@ -350,11 +386,11 @@ function [ ] = fn_Main_Model_01( )
     plot(dy_time,X_a(:,11:13),'LineStyle','-.');
     legend('r_x est','r_y est', 'r_z est', 'r_x true','r_y true', 'r_z true');
     
-    subplot(3,2,6);
-    stairs(rankObs);
-    xlabel('time');
-    ylabel('rank Obs');
-    ylim([0,25]);
+    figure;
+    subplot(2,1,1);
+    plot(log(unobs_index));
+    subplot(2,1,2);
+    plot(log(est_cond));
     
     
 end

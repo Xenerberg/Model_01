@@ -63,22 +63,26 @@ function [ ] = fn_Main_Model_01( )
     
     %Integrate Dynamic equations to see result;    (Simulated data)
     %%
+    
     dy_time = (0:t_delta:totalSimulationTime)';
     Time = dy_time;
     options = odeset('RelTol',1e-7,'AbsTol',1e-9*ones(23,1));
+    omegaIRL_real = zeros(3,length(Time));
+    
     X_a_0_sim = load('./Model_01_Matlab/X_a_0_est');
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_sim,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(X_a(1,20:23)',0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 5e-2*randn(length(X_a),4));
+    Mu_noise = quatnormalize(Mu + 5e-3*randn(length(X_a),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
     
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
+        omegaIRL_real(:,iCount) = fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,5:7)';
     end
-    Signal_vector = timeseries(r_c(1:3,:) + 3e-2*randn(length(r_c),3)',T,'Name','Signal');
+    Signal_vector = timeseries(r_c(1:3,:) + 3e-3*randn(length(r_c),3)',T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
     plot(T,X_a(:,1),T,X_a(:,2),T,X_a(:,3),T,X_a(:,4),'LineWidth',2);
@@ -112,20 +116,24 @@ function [ ] = fn_Main_Model_01( )
     v_time = dy_time; %Time vector   
     X_pre(4:18,1) = X_a_0(5:19,1);
     
-    
+    omegaIRL = zeros(3,length(Time));
+   
     %Describe the state-error covariance initial matrix
-    P_post = eye(21,21);  
-    %a = load('./Model_01_Matlab/P_0');
-    %P_post = diag(diag(a.P_0)) + 1e-2*eye(21,21);
-    P_post(7:9,7:9) = 0.05*eye(3,3);   
-    P_post(16:18,16:18) = 0.05*eye(3,3);
-    P_post(19:21,19:21) = 0.05*eye(3,3);
+    P_post = 1*eye(21,21);  
+    a = load('./Model_01_Matlab/P_0');
+    %P_post = diag(diag(a.P_0)) + 1e-4*eye(21,21);
+    P_post(7:9,7:9) = 0.5*eye(3,3);   
+    P_post(16:18,16:18) = 0.005*eye(3,3);
+    P_post(19:21,19:21) = 0.005*eye(3,3);
      
     residuals = zeros(length(v_time)-1,6);
     signal = zeros(7,1);
     rankObs = zeros(length(v_time));
     X_a = X_a';
-    
+    L = zeros(3,length(Time));
+    unobs_index = zeros(length(v_time),1);
+    est_cond = zeros(length(v_time),1);
+    W_Gram = zeros(21,21);
     vrep = remApi('remoteApi');
     vrep.simxFinish(-1); %Close connections that exist.
     clientID = vrep.simxStart('127.0.0.1',19997,true,true,5000,5);
@@ -159,6 +167,7 @@ function [ ] = fn_Main_Model_01( )
         %%
         pause(0.1);
         vrep.simxSynchronousTrigger(clientID); 
+        
         %%Kalman filter implementation in an iterative loop
         tic;
         for iCount = 2:length(v_time)
@@ -213,12 +222,34 @@ function [ ] = fn_Main_Model_01( )
             %% Update phase
             Hk = fn_Create_H(q_nominal,X_pre(:,end));
             Sk = fn_Create_S(q_nominal,ita_nominal,Cov_r,Cov_nu);
-            K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
+            %Bump up EKF
+            alpha_BEKF = 2;
+            Sk_new = Sk + Hk*P_pre*Hk';
+            K = fn_ComputeKalmanGain(P_pre,Hk,Sk_new);
+            %K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
             h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre);        
             residuals(iCount-1,:) = zk - h;
             X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
 
             %rankObs(iCount) = rank(obsv(Phi,Hk));
+             W_Gram = Phi'*W_Gram*Phi + Hk'*Hk;
+            [~,p_chol] = chol(W_Gram);        
+            eig_W = eig(W_Gram);
+            sing_values = sqrt(eig_W);        
+            if p_chol > 0
+               fprintf('unobservable at: %d\n', iCount); 
+               unobs_index(iCount) = NaN;
+               est_cond(iCount) = NaN;          
+            else
+                unobs_index(iCount) = 1/min(sing_values);%Large makes noise affected
+                est_cond(iCount) = max(sing_values)/min(sing_values);%initial condition sensitivity
+                if log(est_cond(iCount)) > 10
+                   %reset
+                   %P_post = eye(21,21);
+                   %W_Gram = zeros(21,21);
+                   %continue;
+                end
+            end
             %% Error/Warning checks in computed Quaternions
             del_q_v = X_pre_estimate(1:3,iCount);
             if ( norm(del_q_v) > 1)
@@ -269,7 +300,9 @@ function [ ] = fn_Main_Model_01( )
             P_post = (eye(21,21)-K*Hk)*P_pre;
             
             %Convert omega to Chaser-base frame
-            omegaIRL = fn_CreateRotationMatrix
+            omegaIRL(:,iCount) = fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*X_a_Estimated(5:7,iCount);
+            %Find angular momentum in body frame
+            L(:,iCount) = fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*(I*X_a_Estimated(5:7,iCount));
             
             vrep.simxSetObjectPosition(clientID,h_clientSatEst,h_servicerSC,X_a_Estimated(11:13,iCount),vrep.simx_opmode_blocking);
             [alpha,beta,gamma] = quat2angle([X_a_Estimated(4,1);X_a_Estimated(1:3,iCount)]','XYZ');
@@ -284,7 +317,7 @@ function [ ] = fn_Main_Model_01( )
             vrep.simxSetObjectOrientation(clientID,h_GraspPoint,h_clientSatEst,[alpha,beta,gamma],vrep.simx_opmode_blocking);
             
             vrep.simxSynchronousTrigger(clientID); 
-            pause(0.01);
+            pause(0.001);
         end
         toc;
         X_a = X_a';
@@ -407,8 +440,21 @@ function [ ] = fn_Main_Model_01( )
         xlabel('time');
         ylabel('rank Obs');
         ylim([0,25]);
-        pause;
+        
+        
+        figure;
+        subplot(2,1,1);
+        plot(dy_time,omegaIRL(1:3,:));hold all;
+        plot(dy_time,omegaIRL_real(1:3,:),'LineStyle','-.');
+        subplot(2,1,2);
+        plot(dy_time,L(1:3,:));hold all;
+        figure;
+        subplot(2,1,1);
+        plot(log(unobs_index));
+        subplot(2,1,2);
+        plot(log(est_cond));
         %Stop simulation
+        pause;
         vrep.simxStopSimulation(clientID,vrep.simx_opmode_blocking);
    
         %Close connection
