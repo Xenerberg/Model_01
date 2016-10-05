@@ -19,10 +19,7 @@ function [ ] = fn_Main( )
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
     global totalSimulationTime;totalSimulationTime = 150;     
-    %VB-EKF specific details
-    alpha = ones(6,1);
-    beta = ones(6,1);
-    dyn_param = 0.2;
+    
     
     %%
      

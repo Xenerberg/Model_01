@@ -16,7 +16,11 @@ function [ ] = fn_Main_Model_01( )
     %Global variables
     global n;n = 0.0012; %Orbital velocity of Chaser/Target (nearly same)
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
-    global totalSimulationTime;totalSimulationTime = 200;        
+    global totalSimulationTime;totalSimulationTime = 200;      
+    %VB-EKF specific details
+    alpha = ones(6,1);
+    beta = ones(6,1);
+    dyn_param = 0.2;
     
     %%
      
@@ -73,15 +77,21 @@ function [ ] = fn_Main_Model_01( )
     [T,X_a] = ode45(@fn_StateSpace,dy_time,X_a_0_sim.X_a_0_sim,options);
     Signal_Quaternion = [];
     Mu = (fn_CrossTensor(X_a(1,20:23)',0)*X_a(:,1:4)')';
-    Mu_noise = quatnormalize(Mu + 5e-3*randn(length(X_a),4));
+    Mu_noise = zeros(size(Mu));
+    a_t = 900;
+    b_t = 1000;
+    Mu_noise(1:a_t,:) = quatnormalize(Mu(1:a_t,:) + 1e-4*randn(a_t,4));
+    Mu_noise(a_t+1:b_t,:) = quatnormalize(Mu(a_t+1:b_t,:) + 8e-2*randn(b_t-a_t,4));
+    Mu_noise(b_t+1:end,:) = quatnormalize(Mu(b_t+1:end,:) + 1e-4*randn(length(X_a(b_t+1:end,1)),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
-    
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
-        omegaIRL_real(:,iCount) = fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,5:7)';
     end
+    r_c(:,1:a_t) = r_c(:,1:a_t) + 3e-3*randn(a_t,3)';
+    r_c(:,a_t+1:b_t) = r_c(:,a_t+1:b_t) + 3e-2*randn(b_t-a_t,3)';
+    r_c(:,b_t+1:end) = r_c(:,b_t+1:end) + 3e-1*randn(length(X_a(b_t+1:end,1)),3)';
     Signal_vector = timeseries(r_c(1:3,:) + 3e-3*randn(length(r_c),3)',T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
@@ -134,6 +144,8 @@ function [ ] = fn_Main_Model_01( )
     unobs_index = zeros(length(v_time),1);
     est_cond = zeros(length(v_time),1);
     W_Gram = zeros(21,21);
+    O = [];
+    phiMult = eye(21,21);
     vrep = remApi('remoteApi');
     vrep.simxFinish(-1); %Close connections that exist.
     clientID = vrep.simxStart('127.0.0.1',19997,true,true,5000,5);
@@ -154,22 +166,23 @@ function [ ] = fn_Main_Model_01( )
         h_servicerSC = Objects_Scene(16);
         h_GraspPoint = Objects_Scene(51);
         vrep.simxSetObjectPosition(clientID,h_clientSatEst,h_servicerSC,X_a_Estimated(11:13,1),vrep.simx_opmode_blocking);
-        [alpha,beta,gamma] = quat2angle([X_a_Estimated(4,1);X_a_Estimated(1:3,1)]','XYZ');
-        vrep.simxSetObjectOrientation(clientID,h_clientSatEst,h_servicerSC,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+        [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a_Estimated(4,1);X_a_Estimated(1:3,1)]','XYZ');
+        vrep.simxSetObjectOrientation(clientID,h_clientSatEst,h_servicerSC,[alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
         
         vrep.simxSetObjectPosition(clientID,h_clientSatReal,h_servicerSC,X_a(11:13,1),vrep.simx_opmode_blocking);
-        [alpha,beta,gamma] = quat2angle([X_a(4,1);X_a(1:3,1)]','XYZ');
-        vrep.simxSetObjectOrientation(clientID,h_clientSatReal,h_servicerSC,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+        [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a(4,1);X_a(1:3,1)]','XYZ');
+        vrep.simxSetObjectOrientation(clientID,h_clientSatReal,h_servicerSC,[alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
         
         vrep.simxSetObjectPosition(clientID,h_GraspPoint,h_clientSatEst,X_a_Estimated(17:19,1),vrep.simx_opmode_blocking);
-        [alpha,beta,gamma] = quat2angle([X_a_Estimated(23,1);X_a(20:22,1)]','XYZ');
-        vrep.simxSetObjectOrientation(clientID,h_GraspPoint,h_clientSatEst,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+        [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a_Estimated(23,1);X_a(20:22,1)]','XYZ');
+        vrep.simxSetObjectOrientation(clientID,h_GraspPoint,h_clientSatEst,[alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
         %%
         pause(0.1);
         vrep.simxSynchronousTrigger(clientID); 
         
         %%Kalman filter implementation in an iterative loop
         tic;
+       
         for iCount = 2:length(v_time)
 
             %q_nominal = nominal-quaternion (Chaser CoM-Target CoM) from previous states
@@ -222,21 +235,57 @@ function [ ] = fn_Main_Model_01( )
             %% Update phase
             Hk = fn_Create_H(q_nominal,X_pre(:,end));
             Sk = fn_Create_S(q_nominal,ita_nominal,Cov_r,Cov_nu);
+            h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre);
             %Bump up EKF
-            if (trace(P_pre < 1e-4))
+            if (trace(P_pre < 1e-5))
                 alpha_BEKF = 0;
+                            %Set predicted alpha/beta values
+                alpha = dyn_param*alpha;
+                beta = dyn_param*beta;
+                betaprev = 0;
+                alpha = alpha + 0.5;
+
+                for vbCounter = 1:5
+                %% Update phase
+    
+                    %Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
+                    Sk = diag(beta./alpha);
+                    K = fn_ComputeKalmanGain(P_pre,Hk,Sk);                    
+                    residuals(iCount-1,:) = zk - h; 
+                    X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+    
+                    P_post = (eye(21,21)-K*Hk)*P_pre;
+                    post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount));
+                    post_residual = zk - post_h;
+                    matA = Hk*P_post*Hk';
+                    beta = beta + 0.5*post_residual.^2 + 0.5*diag(matA);
+                    if norm(beta - betaprev) < 1e-4
+                        fprintf('counter:%d\n',vbCounter);
+                        break;                
+                    end
+                    betaprev = beta;
+                 end
+
             else
                 alpha_BEKF = 3;
+                Sk_new = Sk + alpha_BEKF*Hk*P_pre*Hk';
+                K = fn_ComputeKalmanGain(P_pre,Hk,Sk_new);
+                %K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
+
+                residuals(iCount-1,:) = zk - h;
+                X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
             end
-            Sk_new = Sk + alpha_BEKF*Hk*P_pre*Hk';
-            K = fn_ComputeKalmanGain(P_pre,Hk,Sk_new);
-            %K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
-            h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre);        
-            residuals(iCount-1,:) = zk - h;
-            X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+                    
+            
+            
+
+            
 
             %rankObs(iCount) = rank(obsv(Phi,Hk));
-             W_Gram = Phi'*W_Gram*Phi + Hk'*Hk;
+            W_Gram = Phi'*W_Gram*Phi + Hk'*Hk;
+             %O = [O;Hk*phiMult];
+             %phiMult = Phi*phiMult;
+             %W_Gram = O'*O;
             [~,p_chol] = chol(W_Gram);        
             eig_W = eig(W_Gram);
             sing_values = sqrt(eig_W);        
@@ -254,6 +303,7 @@ function [ ] = fn_Main_Model_01( )
                    %continue;
                 end
             end
+            
             %% Error/Warning checks in computed Quaternions
             del_q_v = X_pre_estimate(1:3,iCount);
             if ( norm(del_q_v) > 1)
@@ -309,16 +359,16 @@ function [ ] = fn_Main_Model_01( )
             L(:,iCount) = fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*(I*X_a_Estimated(5:7,iCount));
             
             vrep.simxSetObjectPosition(clientID,h_clientSatEst,h_servicerSC,X_a_Estimated(11:13,iCount),vrep.simx_opmode_blocking);
-            [alpha,beta,gamma] = quat2angle([X_a_Estimated(4,1);X_a_Estimated(1:3,iCount)]','XYZ');
-            vrep.simxSetObjectOrientation(clientID,h_clientSatEst,h_servicerSC,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+            [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a_Estimated(4,1);X_a_Estimated(1:3,iCount)]','XYZ');
+            vrep.simxSetObjectOrientation(clientID,h_clientSatEst,h_servicerSC, [alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
             
             vrep.simxSetObjectPosition(clientID,h_clientSatReal,h_servicerSC,X_a(11:13,iCount),vrep.simx_opmode_blocking);
-            [alpha,beta,gamma] = quat2angle([X_a_Estimated(4,1);X_a(1:3,iCount)]','XYZ');
-            vrep.simxSetObjectOrientation(clientID,h_clientSatReal,h_servicerSC,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+            [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a_Estimated(4,1);X_a(1:3,iCount)]','XYZ');
+            vrep.simxSetObjectOrientation(clientID,h_clientSatReal,h_servicerSC, [alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
             
             vrep.simxSetObjectPosition(clientID,h_GraspPoint,h_clientSatEst,X_a_Estimated(17:19,iCount),vrep.simx_opmode_blocking);
-            [alpha,beta,gamma] = quat2angle([X_a_Estimated(23,iCount);X_a(20:22,iCount)]','XYZ');
-            vrep.simxSetObjectOrientation(clientID,h_GraspPoint,h_clientSatEst,[alpha,beta,gamma],vrep.simx_opmode_blocking);
+            [alpha_vrep,beta_vrep,gamma_vrep] = quat2angle([X_a_Estimated(23,iCount);X_a(20:22,iCount)]','XYZ');
+            vrep.simxSetObjectOrientation(clientID,h_GraspPoint,h_clientSatEst, [alpha_vrep,beta_vrep,gamma_vrep],vrep.simx_opmode_blocking);
             
             vrep.simxSynchronousTrigger(clientID); 
             pause(0.001);
