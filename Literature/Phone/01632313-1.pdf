@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  var CPK = '6LfZwcgSAAAAAGWTUdAV3VuQHUbQx9vTxwZvt31i';
+</script>
+
+
+
+
+<html lang="en-US">
+	<head>
+		
+		<meta name="Description" content="IEEE Xplore. Delivering full text access to the world's highest quality technical literature in engineering and technology.">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		
+		<title>IEEE Xplore Abstract 
+		
+		
+		
+		
+		
+			
+		
+		
+			
+				
+		 - 	
+		Optimal estimation for continuous-time systems with delayed measurements
+	</title>
+		
+	
+	
+		
+		
+	
+	
+	
+	
+	
+	
+	 <!-- Google meta-tags Start--> 
+		 
+		    
+			    
+			   		<meta name="citation_journal_title" content="IEEE Transactions on Automatic Control"> 
+				
+				
+								
+			
+		 
+		 
+			<meta name="citation_publisher" content="IEEE"> 
+		
+		 
+		   
+		  	<meta name="citation_author" content="Huanshui Zhang"> 
+		  
+		   
+		    <meta name="citation_author_institution" content="Sch. of Control Sci. &amp; Eng., Shandong Univ., Jinan, China"> 
+		   
+		 
+		   
+		  	<meta name="citation_author" content="Xiao Lu"> 
+		  
+		   
+		 
+		   
+		  	<meta name="citation_author" content="Daizhan Cheng"> 
+		  
+		   
+		 
+		 
+			<meta name="citation_title" content="Optimal estimation for continuous-time systems with delayed measurements"> 
+		
+		 
+			<meta name="citation_date" content="May 2006"> 
+		
+		
+		 
+			 
+				<meta name="citation_volume" content="51"> 
+			
+			 	
+				<meta name="citation_issue" content="5"> 
+				
+			 	
+				<meta name="citation_firstpage" content="823">
+			
+			
+				<meta name="citation_lastpage" content="827"> 
+			
+			
+		
+			
+			<meta name="citation_doi" content="10.1109/TAC.2006.874983">
+			
+		<meta name="citation_abstract_html_url" content="http://ieeexplore.ieee.org/articleDetails.jsp?arnumber=1632313"> 
+		
+		
+		
+		
+			<meta name="citation_pdf_url" content="http://ieeexplore.ieee.org/iel5/9/34231/01632313.pdf?arnumber=1632313"> 
+		
+		
+		
+			
+			<meta name="citation_issn" content="0018-9286"> 
+		
+			
+		<meta name="citation_language" content="English"> 
+        
+		
+			<meta name="citation_keywords" content=" 
+			Kalman filters; 
+			Riccati equations; 
+			continuous time systems; 
+			delay systems; 
+			linear systems; 
+			Kalman filtering; 
+			Riccati equations; 
+			delayed measurements; 
+			linear continuous-time system; 
+			reorganization innovation analysis; 
+			time-delayed systems; 
+			Analytical models; 
+			Delay estimation; 
+			Delay systems; 
+			Filtering; 
+			Kalman filters; 
+			Nonlinear filters; 
+			Performance analysis; 
+			Riccati equations; 
+			Smoothing methods; 
+			Technological innovation; 
+			Continuous-time system; 
+			Kalman filter; 
+			Riccati equations; 
+			reorganized innovation analysis; 
+			time-delayed systems;"> 
+		
+	 <!-- Google meta-tags End--> 
+
+		
+
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+
+	
+
+	
+	
+	
+
+	
+
+	
+
+	
+	
+	
+	
+	
+	
+
+	
+
+			 
+		
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		
+	
+
+	
+
+	
+
+	
+		
+	
+		
+	
+
+
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+	
+	<meta name="Title" CONTENT="IEEE Xplore - Sign In"> 
+
+
+
+
+
+<g:compress>
+	<link rel="stylesheet" href="/assets/css/simplePassMeter.min.css?cv=20160622_133000" />
+	<link rel="stylesheet" type="text/css" media="screen, print" href="http://staticieeexplore.ieee.org/assets/css/styles.css?cv=20160622_133000"/>
+	<link rel="stylesheet" href="/assets/vendor/swiper/dist/idangerous.swiper.css">
+	<link rel="stylesheet" type="text/css" media="screen, print" href="http://staticieeexplore.ieee.org/assets/css/jquery-ui-1.8.19.custom.css?cv=20160622_133000"/>
+</g:compress>
+
+
+
+
+		
+		
+
+	<script type='text/javascript'>
+		var googletag = googletag || {};
+		googletag.cmd = googletag.cmd || [];
+		(function() {
+		var gads = document.createElement('script');
+		gads.async = true;
+		gads.type = 'text/javascript';
+		var useSSL = 'https:' == document.location.protocol;
+		gads.src = (useSSL ? 'https:' : 'http:') + 
+		'//www.googletagservices.com/tag/js/gpt.js';
+		var node = document.getElementsByTagName('script')[0];
+		node.parentNode.insertBefore(gads, node);
+		})();
+	</script>
+
+
+		
+
+		<!--[if gt IE 8]>
+				<link rel="stylesheet" type="text/css" href="http://staticieeexplore.ieee.org/assets/css/ie9.css?cv=20160622_133000" />
+		<![endif]-->
+
+		<!--[if IE 8]>
+				<link rel="stylesheet" type="text/css" href="http://staticieeexplore.ieee.org/assets/css/ie8.css?cv=20160622_133000" />
+		<![endif]-->
+
+		<!--[if IE 7]>
+				<link rel="stylesheet" type="text/css" href="http://staticieeexplore.ieee.org/assets/css/ie7.css?cv=20160622_133000" />
+		<![endif]-->
+
+		<!--[if IE 6]>
+				<link rel="stylesheet" type="text/css" href="http://staticieeexplore.ieee.org/assets/css/ie6.css?cv=20160622_133000" />
+		<![endif]-->
+		
+	</head>
+
+	<body>
+	
+	
+
+			<p class="JumpLink" id="PageTop"><a href="#article-page-hdr" title="Click here to Skip to main content" accesskey="s">Skip to Main Content</a></p>
+	
+
+
+		<div id="global-notification" class="pure-g stats-global-notification">
+			<div class="hide pure-u-1 Notification Notification--global Notification--fixed">
+				<a href class="Notification-close js-close"><i class="fa fa-close"></i></a>
+				<div class="Notification-header"></div>
+				<div class="Notification-text"></div>
+			</div>
+		</div>
+
+		<div id="LayoutWrapper" class="">
+
+
+			
+
+
+
+<!-- what is this script for? -->
+<script type="text/javascript" src="http://staticieeexplore.ieee.org/assets/vendor/jwplayer/jwplayer.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+		
+	
+	
+
+
+
+
+	
+
+
+
+
+
+<div class="Metanav stats-metanav">
+	<div class="pure-g">
+		<div class="pure-u-5-8">
+			<ul class="Menu Menu--horizontal Menu--dividers">
+				<li class="Menu-item stats-extLink"><a href="http://www.ieee.org/"  id="u-home" class="ieeeorg">IEEE.org</a></li>
+				<li class="Menu-item stats-extLink">IEEE <em>Xplore</em> Digital Library</li>
+				<li class="Menu-item stats-extLink"><a href="http://standards.ieee.org/" id="u-standards" class="exitstandardsorg">IEEE-SA</a></li>
+				<li class="Menu-item stats-extLink"><a href="http://spectrum.ieee.org/" id="u-spectrum" class="exitspectrum">IEEE Spectrum</a></li>
+				<li class="Menu-item stats-extLink"><a href="http://www.ieee.org/sitemap.html" id="u-more" class="exitmoreieeesites">More Sites</a></li>
+
+			</ul>
+		</div>
+		<div class="pure-u-3-8">
+			<ul class="Menu Menu--horizontal u-pullRight Menu--dividers u-relative">
+				
+					
+						<li class="Menu-item stats-mnEvLinks"><a class="cart" href="https://www.ieee.org/cart/public/myCart/page.html?refSite=http://ieeexplore.ieee.org&refSiteName=IEEE Xplore" title="View Cart"><span id="cartCount">Cart&nbsp;(0)</span></a></li>
+					
+				
+					<li class="Menu-item stats-mnEvLinks"><a class="create-account" href="#" title="Create Account">Create Account</a></li>
+					<li class="Menu-item stats-mnEvLinks"><a class="sign-in" href="#" title="Sign In">Personal Sign In</a>
+					</li>
+					
+
+
+
+
+
+
+<div id="personal-sign-in" class="hide Overlay Overlay--right stats-metanav-signin-modal">
+	<div class="Overlay-tab">
+		<span class="Overlay-label">Personal Sign In</span>
+	</div>
+	<div class="Overlay-body">
+		<div class="Notification hide u-mb-1">
+			<div class="Notification-header"></div>
+			<div class="Notification-text"></div>
+		</div>
+		<form action="https://ieeexplore.ieee.org/servlet/LoginModalController" class="form-personal-signin pure-form pure-g u-mb-1">
+				<input	type="hidden" name="src2" id="src2" value="loginModalWindow" /> 
+				<input	type="hidden" name="url2" id="url2" value="/xpl/loginModal.jsp" />
+				<div class="pure-u-5-12 u-pr-1">
+					<label class="overlabel" for="username">Username</label>
+					<input class="pure-input-1 username" id="username" name="username" type="text" autocomplete="off" placeholder="Username">
+				</div>
+				<div class="pure-u-5-12 u-pr-1">
+					<label class="overlabel" for="password">Password</label>
+					<input class="pure-input-1 password" id="password" name="password" type="password" placeholder="Password">
+				</div>
+				<div class="pure-u-1-6">
+					<button class="js-submit pure-button pure-button-primary">Sign In</button>
+				</div>
+		</form>
+		<i class="qtooltip icon icon-help" title="IEEE Account usernames and passwords are case sensitive. If you have recently visited IEEE, you may have transitioned your username to your e-mail address. If not, you may be asked to do so after you sign in with your existing IEEE username."></i>
+		<a href="#" class="u-pullRight js-forgotUserPass stats-forgotUserPass">Forgot Username or Password?</a>
+	</div>
+</div>
+
+				
+			</ul>
+		</div>
+	</div>
+</div>  <!-- Metanav -->
+<!--
+TODOS
+* update the way the shopping cart updates counts.  It's inserting string text + count.
+* port logic for modal service unavailable to js
+
+ -->
+
+
+
+
+<div class="Header" id="xplore-header" data-service="true" data-inst="" data-web="false">
+	<div class="pure-g">
+		<div class="pure-u-1-4 logo-container">
+			<a href="/Xplore/home.jsp" accesskey="1" title="Delivering full text access to the world's highest quality technical literature in engineering and technology" alt="IEEE Advancing Technology for Humanity" class="logo-xplore"></a>
+		</div>
+		<div class="pure-u-1-2">
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+		
+		<div class="institutional-signin">
+			<i class="icon icon-single-caret"></i><a class="u-alignMiddle" href="javascript:Modal.show('/xpl/mwInstSignIn.jsp')">Institutional Sign In</a>
+		</div>
+
+	
+
+
+		</div>
+		<div class="pure-u-1-4 logo-container">
+			<span class="logo-ieee u-pullRight"></span>
+		</div>
+	</div>
+</div>
+
+
+
+
+<!--  code for desktop capturing removed -->
+
+
+			
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+	function goToTopic(topic) {
+		var topicMap = applySpecialCharacterMapping(topic); 
+		var url = "/xpl/topicbrowse.jsp?topic=" + escape(topicMap);
+		window.top.location.href = url;
+	}
+</script>
+
+
+<div id="browse-by-topic" class="hide Overlay">
+	<div class="Overlay-tab">By Topic <i class="icon icon--flip icon-caret-blue-down"></i></div>
+	<div class="Overlay-body pure-g">
+		
+		
+			
+			
+				<ul class="List List--caret pure-u-1-3">
+			
+			
+					<li><a href="/browse/topics/Aerospace">Aerospace</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Bioengineering">Bioengineering</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Communication, Networking & Broadcasting">Communication, Networking & Broadcasting</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Components, Circuits, Devices & Systems">Components, Circuits, Devices & Systems</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Computing & Processing">Computing & Processing</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Engineered Materials, Dielectrics & Plasmas">Engineered Materials, Dielectrics & Plasmas</a></li>
+						
+			
+			
+				</ul><ul class="List List--caret pure-u-1-3">
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Engineering Profession">Engineering Profession</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Fields, Waves & Electromagnetics">Fields, Waves & Electromagnetics</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/General Topics for Engineers">General Topics for Engineers</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Geoscience">Geoscience</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Nuclear Engineering">Nuclear Engineering</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Photonics & Electro-Optics">Photonics & Electro-Optics</a></li>
+						
+			
+			
+				</ul><ul class="List List--caret pure-u-1-3">
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Power, Energy, & Industry Applications">Power, Energy, & Industry Applications</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Robotics & Control Systems">Robotics & Control Systems</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Signal Processing & Analysis">Signal Processing & Analysis</a></li>
+						
+			
+			
+		
+			
+			
+			
+					<li><a href="/browse/topics/Transportation">Transportation</a></li>
+						
+			
+			
+		
+		</ul>
+	</div>
+</div>
+
+<div class="Toolbar pure-g">
+	<ul class="pure-u-1 u-noPad u-noMargin">
+		<li id="primary-browse" class="Toolbar-item is-menu stats-browse-content">
+			<a class="Toolbar-button Toolbar-button--primary">Browse<i class="icon icon--flip icon-caret-white-down"></i></a><i class="Toolbar-button-wedge"></i>
+			<ul class="Menu Menu--overlay">
+				<li><a href="/browse/books/title/" class="Books">Books &amp; eBooks</a></li>
+				<li><a href="/browse/conferences/title/" accesskey="c" class="ConfProceedings">Conference Publications</a></li>
+				<li><a href="/xpl/courses.jsp" class="EducationCourses">Courses</a></li>
+				<li><a href="/browse/periodicals/title/" accesskey="j" class="Journals_Mag">Journals &amp; Magazines</a></li>
+				<li><a href="/browse/standards/collection/ieee" accesskey="b" class="Standards">Standards</a></li>
+				<li><a href="#" id="byTopicLink" class="ByTopic">By Topic <i class="icon icon--flip icon-caret-blue-down"></i></a>
+				</li>
+			</ul>
+		</li>
+		
+		
+		<li class="Toolbar-item is-menu">
+			<a class="Toolbar-button" href="#">My Settings<i class="icon icon--flip icon-caret-white-down"></i></a>
+			<ul class="Menu Menu--overlay stats-my-settings">
+				
+				<li><a href="/xpl/tocalerts_list.jsp" class="ALERTS">Content Alerts</a></li>
+				
+				<li><a href="/myprojects/showUserProjects.jsp" class="stats-my-projects">My Projects</a></li>
+				
+                					
+				<li><a href="/search/savedsearches" class="stats-saved-searches">Search Alerts</a></li>
+				<li><a href="/Xplore/login.jsp?reason=fromPreferencesMenu" class="" id="">Preferences</a></li>
+				<li><a href="/articleSale/purchaseHistory.jsp" class="PURCHASEHISTORY" id="PURCHASEHISTORY">Purchase History</a></li>
+				<li><a href="/search/searchHistoryMore.jsp" id="search-history" class="searchhistory">Search History</a></li>
+				<li><a href="/Xplore/accessinfo.jsp" class="WHATCANIACCESS" id="WHATCANIACCESS">What can I access?</a></li>
+			</ul>
+		</li>
+		
+		<li class="Toolbar-item is-menu">
+			<a href="#" class="Toolbar-button">Get Help<i class="icon icon--flip icon-caret-white-down"></i></a>
+			<ul class="Menu Menu--overlay stats-get-help">
+				<li><a href="/xpl/aboutUs.jsp" id="AboutIEEE" >About IEEE <em>Xplore</em></a></li>
+				<li><a href="/xpl/feedback.jsp" id="Feedback" >Feedback</a></li>
+				<li><a href="/xpl/techform.jsp" id="TechSupport">Technical Support</a></li>
+				<li><a href="/Xplorehelp/Help_start.html" id="Resources" >Resources and Help</a></li>
+				<li><a href="/xpl/termsOfUse.jsp" id="TermsOfUse">Terms of Use</a></li>
+			</ul>
+		</li>
+		<li class="Toolbar-item stats-what-can-i-access"><a href="/Xplore/accessinfo.jsp" class="Toolbar-button">What Can I Access?</a></li>
+
+		
+			<li class="Toolbar-item"><a href="http://innovate.ieee.org/innovate/article/177773?LT=XPLSub_XPL_16_SUB" target="_blank" class="Toolbar-button">Subscribe</a></li>
+		
+
+		
+	</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="Search pure-g ">
+	
+	
+	<form class="js-inputs Search-inputs" id="search_form" name="search_form" action="/search/searchresult.jsp" method="get">
+		<div class="pure-u-1">
+			<div class="Notification Notification--float hide ">
+				<div class="Notification-header"></div>
+				<div class="Notification-text"></div>
+			</div>
+		</div>
+		<input type="hidden" name="newsearch" id="newsearch" value="true">
+		<div class="u-noPad pure-u-5-6">
+			<fieldset id="search-basic" class="Search-group ">
+				<div class="pure-g">
+					<div class="pure-u-1 u-relative">
+						<label for="input-basic" class="overlabel">Enter Search Term</label>
+						<input type="text" autocomplete="off" id="input-basic" name="queryText" value="" placeholder="Enter Search Term">
+					</div>
+				</div>
+			</fieldset>
+			<fieldset id="search-author" class="Search-group hide">
+				<div class="pure-g">
+ 					<span class="pure-u-1-2">
+						<label for="fname" class="overlabel">First Name / Given Name</label>
+						<input id="fname" name="fname" type="text" autocomplete="off" placeholder="First Name / Given Name" value="">
+					</span>
+ 					<span class="pure-u-1-2">
+						<label for="lname" class="overlabel">Family Name / Last Name / Surname</label>
+						<input id="lname" name="lname" type="text" autocomplete="off" placeholder="Family Name / Last Name / Surname" value="">
+					</span>
+				</div>
+			</fieldset>
+			
+
+
+
+
+			<fieldset id="search-journal" class="Search-group  hide">
+				<div class="pure-g">
+					<span class="pure-u-2-5">
+						<label for="pqs_title" class="overlabel">Publication Title</label>
+						<input name="title" id="pqs_title"  type="text" autocomplete="off" value="" placeholder="Publication Title">
+					</span>
+					<span class="pure-u-1-5">
+						<label for="pqs_volume" class="overlabel">Volume</label>
+						<input  name="volume" id="pqs_volume" type="text" autocomplete="off" value="" placeholder="Volume">
+					</span>
+					<span class="pure-u-1-5">
+						<label for="pqs_issue" class="overlabel">Issue</label>
+						<input name="issue" id="pqs_issue" type="text" autocomplete="off" value="" placeholder="Issue">
+					</span>
+					<span class="pure-u-1-5">
+						<label for="pqs_spage" class="overlabel">Start Page</label>
+						<input name="spage" id="pqs_spage" type="text" autocomplete="off" value="" placeholder="Start Page">
+					</span>
+				
+				</div>
+	
+			</fieldset>
+
+					
+
+		</div>
+		<div class="pure-u-1-6" id="">
+			<button type="submit" class="js-search Search-submit Button btn-search">
+			<i class="icon icon-search"></i>Search
+			</button>
+		</div>
+	</form>
+
+	<div role="navigation" class="pure-u-15-24">
+		<ul class="u-notList Search-controlGroup stats-search-menu">
+			<li class="Search-control active"><a href="#search-basic" id="basicSearch">Basic Search</a></li>
+			<li class="Search-control "><a href="#search-author" id="authorSearch">Author Search</a></li>
+			<li class="Search-control "><a href="#search-journal" id="publicationSearch">Publication Search</a></li>
+		</ul>
+	</div>
+	<div class="pure-u-9-24">
+		<div class="Search-option stats-search-menu">
+		<a class="Search-option-title" href="/search/advsearch.jsp" id="advancedSearch">Advanced Search</a>
+		</div>
+
+		<div class="Search-option Search-menu stats-search-menu">
+			<a href="#" class="Search-option-title" id="otherSearchOptions">Other Search Options<i class="icon icon--flip icon-more-options-caret"></i></a>
+			<ul class="Menu Menu--overlay">
+				<li><a href="/search/advsearch.jsp?expression-builder" class="CommandSearch" id="commandSearch">Command Search</a></li>
+				<li><a href="/search/advsearch.jsp?quick-search" class="CitationSearch" id="citationSearch">Citation Search</a></li>
+				<li><a href="/search/savedsearches" class="SAVEDSEARCHES" id="savedSearches">Search Alerts</a></li>
+				<li><a href="/search/searchHistoryMore.jsp" class="searchhistory" id="searchHistory">Search History</a></li>
+			</ul>
+		</div>
+		
+	</div>
+	
+</div>
+
+ 
+
+
+
+			
+			
+
+
+
+
+
+
+
+	
+		
+		
+	
+	
+
+
+
+
+			
+			<div id="global-alert-message"></div>
+			
+
+
+
+
+
+
+<html>
+
+
+
+<div id="global-alert-message" class="global-no-alert-message" style=""></div>
+<div id="article-page">
+
+    <div id="article-page-layout">
+    
+   	    	
+
+      <div id="article-page-hdr" class="header">
+       
+
+
+
+
+
+
+<div class="main-blk cf">
+
+	
+
+
+
+<div class="bar">
+	<div class="breadcrumbs">
+								
+							
+	
+		<a href="/browse/periodicals/title/">Browse Journals & Magazines</a> &gt; 
+		<a href='../xpl/RecentIssue.jsp?punumber=9'>IEEE Transactions on Automati</a> ...&gt; 
+		<a href='../xpl/tocresult.jsp?isnumber=34231'>Volume:51 Issue:5</a>
+	
+
+	
+	
+		
+	
+	
+		
+	
+	
+	
+		  
+		  
+		  
+	
+
+
+
+
+	
+		
+		
+	
+
+
+	
+		
+		
+	
+
+
+	
+		
+		
+	
+
+
+	
+		
+		
+	
+
+
+
+	
+		
+		
+	
+
+
+
+	
+		
+	
+	
+
+
+
+
+
+	
+		
+		
+	
+
+
+
+	
+		
+	
+	
+
+
+<!--Users can either pass in the name of the help file (as a param) to use or it will base the help 
+file on the action attribute and rules from Casey's Help File Mapping and META Attributes spreadsheet  -->
+
+	
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+	<a id="help" target="blank" href="/Xplorehelp/Help_Working_with_Abstracts.htm" 
+			
+	><img src="http://staticieeexplore.ieee.org/assets/img/icon.support.gif" width="24" height="20"  alt="Help Working with Abstracts" title="Help Working with Abstracts" text="Help" class="icon" />
+			
+	</a>
+
+</div>
+	
+				
+
+	
+
+	<div class="nav-results nav">
+		
+		
+		
+	</div>
+	
+</div>
+
+ 
+	
+	
+	<div class="title">
+		<h1>
+			
+				
+				
+				
+					Optimal estimation for continuous-time systems with delayed measurements
+				
+			
+		</h1>
+		
+		
+		   
+				   
+		   
+		   
+	</div>
+
+	
+		
+		
+		
+			<div class="button-set">
+				
+					
+					
+						<span class="button btn-style-a" id="btn-full-txt">
+							<a tabindex="0" class="pdf">Full Text <b>Sign-In or Purchase</b></a>
+						</span>
+					
+				
+			</div>
+		
+	
+
+	
+	
+	
+	
+
+
+
+ 
+<div id="full-txt-menu-wrap">         	
+   <div id="full-txt-menu" class="cf">
+
+     
+
+
+
+
+
+
+
+
+	<div class="section" id="ftm-sign-in">
+	
+	
+	
+		<div class="content">
+			<form name="signInForm" id="productDetailsSignInForm" action="https://ieeexplore.ieee.org/servlet/LoginModalController" onsubmit="return false;">
+				<input type="hidden" name="url" value="http://ieeexplore.ieee.org/ielx5/9/34231/01632313.pdf?tp=&arnumber=1632313&isnumber=34231"/>
+				<div class="intro">
+					
+						
+							<h3>Sign In</h3>
+
+
+
+	
+		<div class="error-message">
+			<strong>Cookies	must be enabled to login.After enabling cookies , please use refresh or reload or ctrl+f5 on the browser  for the login options.</strong>
+		</div>
+	
+	
+		
+	
+
+						
+						
+					
+
+
+					<div id="errorMessages"></div>
+				</div>
+				
+					<p class="field">
+						<label for="username" class="overlabel">Username</label>
+						<input type="text" id="username" name="username"  placeholder="username"/>
+					</p>
+					<p class="field">
+						<label for="password" class="overlabel">Password</label>
+						<input type="password" id="password" name="password"   placeholder="password"/>
+						<span id="SpinnerImage">
+						<img src="http://staticieeexplore.ieee.org/assets/img/move-spinner.gif"  />
+					</span>
+					</p>
+
+					<div class="footer cf">
+						<ul class="links">
+							
+								
+									
+										<li><a href="javascript:Modal.refresh('/xpl/mwForgotUserPasswordIntro.jsp')">Forgot Username/Password?</a></li>
+									
+									
+								
+							
+							
+								<li><a href="javascript:Modal.refresh('/xpl/mwInstForgotUserNamePassword.jsp')">Forgot Institutional Username/Password?</a></li>
+							
+							
+									<li><a href="javascript:redirectToWayf()">Other Authentication Options</a></li>
+							
+						</ul>
+						<input type="image" src="http://staticieeexplore.ieee.org/assets/img/btn.signin.102.png" id="pofsignIn" alt="Sign In" class="form-action" />
+					</div>
+				
+			</form>
+		</div>
+	
+		
+	
+	
+</div>
+
+     
+
+
+
+
+<!-- This section is for error message to show purchase options are unavilable -->
+
+
+
+<!-- This section is to show the purchase prices -->
+
+
+
+
+<div class="section tabbed-blk" id="ftm-purchase">
+           <div class="nav nav-tabs cf">           
+	             <ul>
+	               <li class="active">
+	                 <a href="#ftm-purchase-pdf">Purchase PDF</a>
+	               </li>
+	               <li >
+	                 <a href="#ftm-purchase-other">Other Formats</a>
+	               </li>
+	             </ul>
+           </div>         
+           <div class="subsection" id="ftm-purchase-pdf" >
+	          
+	              
+		          
+		          	  
+	          	  		 
+	          	  		  
+	          	  		 
+	          	  			
+
+
+	<form action="#" id="purchase-options">
+		<div class="body">
+			<table>
+				<thead>
+					<tr>
+						<th>Formats</th>
+						<th>Non-Member</th>
+						<th>Member</th>
+					</tr>
+				</thead>
+				<tbody>
+					
+				 		<tr>									 		    
+				 		    <th>
+				 		      			 		      
+				 		        <input type="checkbox" value="1632313" id="1632313" 
+				 		          checked										
+								/>
+					 		    <label for="1632313">
+					 		    	PDF/HTML
+					 		    </label>
+													 		    
+					 		    
+				 		    </th>
+							<td>
+									
+										
+											$33
+										
+										
+										
+										
+							</td>
+							<td>
+									
+										
+											$13
+										
+										
+										
+										
+								  </td>
+						</tr>
+					
+				</tbody>
+			</table>
+		</div>
+		<a href="#" id="qualify-price-ad" class="lnk-learn"><img src="http://staticieeexplore.ieee.org/assets/img/ad-qualify-best-price.gif" width="205" height="61" alt="Learn how you can qualify for the best price for this item!" /></a>
+               
+		<div id="qualify-price-ad-overlay">
+			<div class="header">
+				<font color="#006699"><strong>Become an IEEE Member or Subscribe to <br>IEEE <em>Xplore</em> for exclusive pricing!</strong></font> 
+					<a class="close-module" title="Close this window" href="#"><img alt="close button" src="http://staticieeexplore.ieee.org/assets/img/btnCloseModalWindow.gif"></a>
+			</div>
+			<hr>
+			<div class="message">
+				<img height="82" width="50" class="icon-representation" alt="puzzle piece" src="http://staticieeexplore.ieee.org/assets/img/icon-puzzle-piece.gif">
+				<p align="left">
+					IEEE membership options for an 	individual and IEEE <em>Xplore</em> subscriptions for an organization offer the most affordable access to essential journal articles, conference papers, standards, 
+						eBooks, and eLearning courses. 
+				</p>
+				<p align="left">Learn more about:</p>
+				<p align="left"><a href="http://www.ieee.org/join" title="" class="bulletLink">IEEE membership</a></p>
+				<p align="left"><a href="http://www.ieee.org/xploresubs" title="" class="bulletLink">IEEE <em>Xplore</em> subscriptions</a></p>
+			</div>
+		</div>
+		<div id="addToCartSpan" class="footer cf">
+			<input id="add-to-cart-button" type="image" src="http://staticieeexplore.ieee.org/assets/img/btn.add-to-cart.png" alt="Add To Cart" class="form-action" />
+		</div>
+		<div class="addedToCartSpan" id="addedToCartSpan"  style="display:none"> 
+			Item has been <br/>added to the cart.
+		</div>           
+               
+	</form>
+
+	          	  		 
+		          	  
+			      
+			      
+			      
+		      
+	      </div>
+	      <div class="subsection" id="ftm-purchase-other" style="display:none;">
+          	
+		          
+			      
+			      		<div class="pricingOptionsError"> <strong>No additional formats available for this document.</strong></div>
+			      
+	      	
+	      </div>
+	</div> 
+
+				              
+
+     <div class="section" id="ftm-links">
+       <ul>
+	       		
+				<li>
+				  <span class="label">Already Purchased?</span>
+				  <a id="productDetailsOtherLinks" href="/articleSale/purchaseHistory.jsp" title="View the product now if you have already purchased it">View Article</a>
+				</li>
+						
+			
+	         <li >
+	           <span class="label">Subscription Options</span>
+	           <a id="productDetailsOtherLinks" href="http://www.ieee.org/xploresubs" title="Page detailing how subscription pricing works on IEEE">Learn More</a>
+	         </li>              
+       </ul>
+     </div>
+     
+   </div>
+ </div>
+          
+          
+
+	
+
+
+	
+
+	<script type='text/javascript'>
+		var googletag = googletag || {};
+		googletag.cmd = googletag.cmd || [];
+		(function() {
+		var gads = document.createElement('script');
+		gads.async = true;
+		gads.type = 'text/javascript';
+		var useSSL = 'https:' == document.location.protocol;
+		gads.src = (useSSL ? 'https:' : 'http:') + 
+		'//www.googletagservices.com/tag/js/gpt.js';
+		var node = document.getElementsByTagName('script')[0];
+		node.parentNode.insertBefore(gads, node);
+		})();
+	</script>
+
+
+	<div class="ad google-ad u-inlineBlock"> 
+	<!-- xplore_subscription_leadgen_non_prod -->
+		
+
+
+
+
+
+
+
+<script type='text/javascript'>
+
+	googletag.cmd.push(function() {
+		googletag.defineSlot('/3890430/xplore_subscription_leadgen', [180, 150], 'div-gpt-ad-1366327280661-0').addService(googletag.pubads());
+		googletag.pubads().setTargeting("usertype", "anonymous"); 
+		googletag.pubads().setTargeting("sub_type", "");
+		googletag.pubads().setTargeting("cust_type", "");
+		googletag.pubads().setTargeting("geoip", "80.187.118.33"); 
+		googletag.pubads().setTargeting("userid", ""); 
+		googletag.pubads().setTargeting("isinst", "");
+		googletag.pubads().setTargeting("search", "");
+		googletag.pubads().setTargeting("pu_number", "9");
+		googletag.pubads().setTargeting("content_ID", "Journals & Magazines");
+		googletag.pubads().setTargeting("publisher", "");
+		googletag.pubads().collapseEmptyDivs();
+		googletag.enableServices();
+		});
+	
+</script>
+<div id='div-gpt-ad-1366327280661-0' style='width:180px; height:150px;display:block;'>
+	<script type='text/javascript'>
+			googletag.cmd.push(function() { googletag.display('div-gpt-ad-1366327280661-0'); });
+	</script>
+</div>
+
+
+	</div>
+
+
+
+
+</div>
+
+
+       
+
+
+
+<div id="article-authors-wrap">
+          
+          <div id="article-authors" class="cf">
+            <div class="total" role="article" aria-label="Number of Authors" align="center"><b>3</b> Author(s) </div>
+				<div class="authors" role="article"  aria-label="Authors Information">
+					
+						
+					 	 							
+						
+
+
+	
+ 					
+ 	
+ 	
+ 	
+ 		
+ 		 
+ 		 
+ 		
+ 		 
+ 						 		
+ 	
+ 	
+	 	
+	 	
+ 		 	
+ 		 
+ 		 
+ 	
+ 	
+ 					
+ 	<a href="#"  class="authorPreferredName prefNameLink" title='' >
+ 	<span id="authorAffiliations" class="Sch. of Control Sci. &amp; Eng., Shandong Univ., Jinan, China|c|"></span> 	
+   	<span id="preferredName" class="Huanshui Zhang"></span>
+   	
+ 		<span id="authorId" class="37280791400"></span>
+   		
+   	Huanshui Zhang</a>
+	
+
+												 	
+						
+							
+								;&nbsp;Sch. of Control Sci. & Eng., Shandong Univ., Jinan, China
+							
+	        			
+					
+						
+					 	; 							
+						
+
+
+	
+ 					
+ 	
+ 	
+ 	
+ 		
+ 		 
+ 		 
+ 		
+ 		 
+ 						 		
+ 	
+ 	
+ 	
+ 					
+ 	<a href="#"  class="authorPreferredName prefNameLink" title='' >
+ 	<span id="authorAffiliations" class=""></span> 	
+   	<span id="preferredName" class="Xiao Lu"></span>
+   	
+ 		<span id="authorId" class="37279987200"></span>
+   		
+   	Xiao Lu</a>
+	
+
+												 	
+						
+					
+						
+					 	; 							
+						
+
+
+	
+ 					
+ 	
+ 	
+ 	
+ 		
+ 		 
+ 		 
+ 		
+ 		 
+ 						 		
+ 	
+ 	
+ 	
+ 					
+ 	<a href="#"  class="authorPreferredName prefNameLink" title='' >
+ 	<span id="authorAffiliations" class=""></span> 	
+   	<span id="preferredName" class="Daizhan Cheng"></span>
+   	
+ 		<span id="authorId" class="37274394400"></span>
+   		
+   	Daizhan Cheng</a>
+	
+
+												 	
+						
+					
+					
+				</div>
+  			</div><!-- article-authors -->
+  
+		</div>
+	
+       	
+       	
+	
+
+	
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<input type="hidden" value="/xpl/login.jsp">
+      <div id="nav-article-wrap">
+        <div id="nav-article" class="nav" role="navigation">
+          <ul>
+          		<li  class="active"><a href="/xpl/articleDetails.jsp?reload=true&tp=&arnumber=1632313&isnumber=34231&url=http%3A%2F%2Fieeexplore.ieee.org%2Fielx5%2F9%2F34231%2F01632

@@ -18,9 +18,9 @@ function [ ] = fn_Main_Model_01( )
     global parameter_gravitation;parameter_gravitation = 398.6005e12;
     global totalSimulationTime;totalSimulationTime = 200;      
     %VB-EKF specific details
-    alpha = ones(6,1);
-    beta = ones(6,1);
-    dyn_param = 0.2;
+    alpha = 0.2*ones(6,1);%0.2
+    beta = 0.06*ones(6,1);%2
+    dyn_param = 0.7;%0.4;
     
     %%
      
@@ -80,19 +80,19 @@ function [ ] = fn_Main_Model_01( )
     Mu_noise = zeros(size(Mu));
     a_t = 900;
     b_t = 1000;
-    Mu_noise(1:a_t,:) = quatnormalize(Mu(1:a_t,:) + 1e-4*randn(a_t,4));
-    Mu_noise(a_t+1:b_t,:) = quatnormalize(Mu(a_t+1:b_t,:) + 8e-2*randn(b_t-a_t,4));
-    Mu_noise(b_t+1:end,:) = quatnormalize(Mu(b_t+1:end,:) + 1e-4*randn(length(X_a(b_t+1:end,1)),4));
+    Mu_noise(1:a_t,:) = quatnormalize(Mu(1:a_t,:) + 1e-2*randn(a_t,4));
+    Mu_noise(a_t+1:b_t,:) = quatnormalize(Mu(a_t+1:b_t,:) + 8e-1*randn(b_t-a_t,4));
+    Mu_noise(b_t+1:end,:) = quatnormalize(Mu(b_t+1:end,:) + 1e-2*randn(length(X_a(b_t+1:end,1)),4));
     Signal_Quaternion(:,2:4) = Mu_noise(:,1:3);
     Signal_Quaternion(:,1) = X_a(:,4); %+ %0.01*randn(length(X_a),1);
     r_c = zeros(3,length(dy_time));
     for iCount = 1:length(X_a)
         r_c(1:3,iCount) = X_a(iCount,11:13)' + rho_c + fn_CreateRotationMatrix(X_a(iCount,1:4)')*X_a(iCount,17:19)';
     end
-    r_c(:,1:a_t) = r_c(:,1:a_t) + 3e-3*randn(a_t,3)';
-    r_c(:,a_t+1:b_t) = r_c(:,a_t+1:b_t) + 3e-2*randn(b_t-a_t,3)';
+    r_c(:,1:a_t) = r_c(:,1:a_t) + 3e-2*randn(a_t,3)';
+    r_c(:,a_t+1:b_t) = r_c(:,a_t+1:b_t) + 3e-1*randn(b_t-a_t,3)';
     r_c(:,b_t+1:end) = r_c(:,b_t+1:end) + 3e-1*randn(length(X_a(b_t+1:end,1)),3)';
-    Signal_vector = timeseries(r_c(1:3,:) + 3e-3*randn(length(r_c),3)',T,'Name','Signal');
+    Signal_vector = timeseries(r_c(1:3,:),T,'Name','Signal');
     h_figure = figure('Name','Dynamic responses');
     subplot(2,2,1);
     plot(T,X_a(:,1),T,X_a(:,2),T,X_a(:,3),T,X_a(:,4),'LineWidth',2);
@@ -130,20 +130,26 @@ function [ ] = fn_Main_Model_01( )
    
     %Describe the state-error covariance initial matrix
     P_post = 1*eye(21,21);  
+    
     a = load('./Model_01_Matlab/P_0');
     %P_post = diag(diag(a.P_0)) + 1e-4*eye(21,21);
     P_post(7:9,7:9) = 0.5*eye(3,3);   
     P_post(16:18,16:18) = 0.05*eye(3,3);
     P_post(19:21,19:21) = 0.05*eye(3,3);
-     
+    P_0 = P_post; 
     residuals = zeros(length(v_time)-1,6);
+    post_residual = residuals;
     signal = zeros(7,1);
     rankObs = zeros(length(v_time));
     X_a = X_a';
     L = zeros(3,length(Time));
     unobs_index = zeros(length(v_time),1);
     est_cond = zeros(length(v_time),1);
+    Mh_PostDist = zeros(length(v_time),1);
+    Mh_PreDist = Mh_PostDist;
+    trace_SK = Mh_PreDist;
     W_Gram = zeros(21,21);
+    flag_converged = false;
     O = [];
     phiMult = eye(21,21);
     vrep = remApi('remoteApi');
@@ -209,7 +215,7 @@ function [ ] = fn_Main_Model_01( )
 
             %% State propagation               
             Phi = fn_Create_Phi(X_a_itr, n, t_delta);
-
+            A = fn_Create_A(X_a_itr,n);
 
             %% Create Process-noise covariance matrix
             Q_r = fn_Create_Q_r(Phi,X_a_itr, t_delta, sig_tau,sig_p);
@@ -236,49 +242,60 @@ function [ ] = fn_Main_Model_01( )
             Hk = fn_Create_H(q_nominal,X_pre(:,end));
             Sk = fn_Create_S(q_nominal,ita_nominal,Cov_r,Cov_nu);
             h = fn_Create_h(fn_CrossTensor(del_q,0)*q_nominal,X_pre);
-            %Bump up EKF
-            if (trace(P_pre < 1e-5))
+            residuals(iCount-1,:) = zk - h; 
+            Mh_PreDist(iCount-1) = sqrt(residuals(iCount-1,:)*inv(Hk*P_pre*Hk' + Sk)*residuals(iCount-1,:)');
+            
+            if ((trace(P_pre))/21 < 2e-2 || flag_converged == true)
+                display('VB-EKF');
+                flag_converged = true;
                 alpha_BEKF = 0;
-                            %Set predicted alpha/beta values
+                %Set predicted alpha/beta values
                 alpha = dyn_param*alpha;
                 beta = dyn_param*beta;
                 betaprev = 0;
                 alpha = alpha + 0.5;
-
-                for vbCounter = 1:5
+                
+                for vbCounter = 1:3
                 %% Update phase
     
                     %Sk = fn_Create_S(q_nominal,ita,Cov_r,Cov_nu);
                     Sk = diag(beta./alpha);
-                    K = fn_ComputeKalmanGain(P_pre,Hk,Sk);                    
-                    residuals(iCount-1,:) = zk - h; 
-                    X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
-    
+                    K = fn_ComputeKalmanGain(P_pre,Hk,Sk);        
+                    X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);    
                     P_post = (eye(21,21)-K*Hk)*P_pre;
+                    
                     post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount));
-                    post_residual = zk - post_h;
+                    post_residual(iCount-1,:) = zk - post_h;
+                    Hk_post = fn_Create_H(q_nominal,X_pre_estimate(:,iCount));
                     matA = Hk*P_post*Hk';
-                    beta = beta + 0.5*post_residual.^2 + 0.5*diag(matA);
-                    if norm(beta - betaprev) < 1e-4
+                    beta = beta + 0.5*post_residual(iCount-1,:)'.^2 + 0.5*diag(matA);
+                    if norm(beta - betaprev) < 5e-6
                         fprintf('counter:%d\n',vbCounter);
                         break;                
                     end
                     betaprev = beta;
                  end
 
-            else
-                alpha_BEKF = 3;
+            else%Bump up EKF
+                display('B-EKF');
+                alpha_BEKF = 5;
                 Sk_new = Sk + alpha_BEKF*Hk*P_pre*Hk';
                 K = fn_ComputeKalmanGain(P_pre,Hk,Sk_new);
                 %K = fn_ComputeKalmanGain(P_pre,Hk,Sk);
 
                 residuals(iCount-1,:) = zk - h;
                 X_pre_estimate(:,iCount) = X_pre(:,end) + K*(zk - h);
+                post_h = fn_Create_h(fn_CrossTensor([X_pre_estimate(1:3,iCount);1],0)*q_nominal,X_pre_estimate(:,iCount));
+                post_residual(iCount-1,:) = zk - post_h;
+                P_post = (eye(21,21)-K*Hk)*P_pre;
+                Hk_post = fn_Create_H(q_nominal,X_pre_estimate(:,iCount));
             end
                     
+            Mh_PostDist(iCount-1) = sqrt(post_residual(iCount-1,:)*inv(Hk_post*P_post*Hk_post' + Sk)*post_residual(iCount-1,:)');
+            eig_Observer = eig(A-K*Hk);
             
-            
-
+            Normal_P = inv(sqrt(P_0))*P_post*inv(sqrt(P_0));
+            [V_P,D_eigVal] = eig(Normal_P);
             
 
             %rankObs(iCount) = rank(obsv(Phi,Hk));
@@ -303,6 +320,7 @@ function [ ] = fn_Main_Model_01( )
                    %continue;
                 end
             end
+            trace_SK(iCount-1) = trace(Sk);
             
             %% Error/Warning checks in computed Quaternions
             del_q_v = X_pre_estimate(1:3,iCount);
@@ -316,7 +334,8 @@ function [ ] = fn_Main_Model_01( )
             del_q = [del_q_v;del_q_0];
 
             if (imag(del_q(1)) ~= 0)
-                display('Error due to del_q being imaginary');
+                fprintf('Error due to del_q being imaginary: %d', iCount);
+                
                 break;
             end
             if ( abs(del_q_0) < 0.8 )
@@ -344,14 +363,14 @@ function [ ] = fn_Main_Model_01( )
                 display('Warning, del_ita_0 is too low');
                 fprintf('del_ita_0:%f\n',del_ita_0);
             end
-
+            
 
             %% Convert from intermediate to Estimated-states after Update-stage 
             q_est = fn_CrossTensor(del_q,0)*q_nominal;
             ita_est = fn_CrossTensor(del_ita,1)*ita_nominal;        
             X_a_itr = [q_est;X_pre_estimate(4:18,iCount);ita_est];
             X_a_Estimated(:,iCount) = X_a_itr;
-            P_post = (eye(21,21)-K*Hk)*P_pre;
+            %
             
             %Convert omega to Chaser-base frame
             omegaIRL(:,iCount) = fn_CreateRotationMatrix(X_a_Estimated(1:4,iCount))*X_a_Estimated(5:7,iCount);
@@ -503,10 +522,23 @@ function [ ] = fn_Main_Model_01( )
         subplot(2,1,2);
         plot(dy_time,L(1:3,:));hold all;
         figure;
-        subplot(2,1,1);
-        plot(log(unobs_index));
-        subplot(2,1,2);
-        plot(log(est_cond));
+        subplot(3,2,1);
+        plot(dy_time,log(unobs_index));
+        ylabel('singular value');
+        subplot(3,2,2);
+        plot(dy_time,log(est_cond));
+        ylabel('Condition number');
+        subplot(3,2,3);
+        plot(dy_time,Mh_PreDist);
+        ylabel('Mh-dist (pre update)');
+        subplot(3,2,4);
+        plot(dy_time,Mh_PostDist);
+        ylabel('Mh-dist (post update)');
+        subplot(3,2,5);
+        plot(dy_time,trace_SK);
+        ylabel('trace(Sk)');
+        
+        
         %Stop simulation
         pause;
         vrep.simxStopSimulation(clientID,vrep.simx_opmode_blocking);
@@ -590,6 +622,19 @@ function[Phi] = fn_Create_Phi(X_a,n,t_delta)
 
 end
 %Create state propagation matrix of the whole system
+function [A] = fn_Create_A(X_a,n)
+    omega = X_a(5:7);
+    p = X_a(8:10);
+    M = fn_Create_M(p,omega);   
+    N = fn_Create_N(omega);
+    A_r = [-fn_VectorToSkewSymmetricTensor(omega),0.5*eye(3,3),zeros(3,3);zeros(3,3),M,N;zeros(3,9)];
+    A_theta = zeros(6,6);
+    K = [3*n^2 0 0;0 0 0;0 0 -n^2];
+    A_t = [zeros(3,3),eye(3,3);K, -2*fn_VectorToSkewSymmetricTensor([0,0,n])];
+    A = [A_r,zeros(9,12);zeros(6,9),A_t,zeros(6,6);zeros(6,15),A_theta];
+
+end
+
 
 %Function: fn_Create_Phi_r()
 %Inputs: X_a - 23-state vector,

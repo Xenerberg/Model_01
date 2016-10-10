@@ -152,6 +152,7 @@ function [ ] = fn_Main( )
         
         
         %% State propagation               
+        A = fn_Create_A(X_a_itr,n,p);
         Phi = fn_Create_Phi(X_a_itr, n, t_delta,p);
         
         
@@ -229,7 +230,7 @@ function [ ] = fn_Main( )
         X_a_itr = [q_est;X_pre_estimate(4:12,iCount)];
         X_a_Estimated(:,iCount) = X_a_itr;
         P_post = (eye(12,12)-K*Hk)*P_pre;
-  
+        [eig_vectorObs,eig_Observer] = eig(A - K*Hk);
         
     end
     toc;
@@ -445,6 +446,17 @@ function [Phi_r] = fn_Create_Phi_r(X_a,p)
 %     
 
 end
+
+function [A] = fn_Create_A(X_a,n,p)
+    omega = X_a(5:7);
+    M = fn_Create_M(p,omega);   
+    A_r = [-fn_VectorToSkewSymmetricTensor(omega),0.5*eye(3,3);zeros(3,3),M];
+    K = [3*n^2 0 0;0 0 0;0 0 -n^2];
+    A_t = [zeros(3,3),eye(3,3);K, -2*fn_VectorToSkewSymmetricTensor([0,0,n])];
+    A = [A_r,zeros(6,6);zeros(6,6),A_t];
+
+end
+
 %Function: fn_Create_M()
 %Inputs: p - Inertial ratios 
 %        omega - angular velocity between Chaser Grasping frame and Chaser

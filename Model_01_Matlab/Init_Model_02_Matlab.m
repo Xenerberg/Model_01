@@ -62,7 +62,7 @@ Cov_nu = 5e-3*eye(4,4);
 n = 0.0012;
 
 %Simulation parameters
-global t_delta; t_delta = 0.1;
+global t_delta; t_delta = 0.01;
 
 X_a_0 = [q_1_0;q_2_0;q_3_0;q_0_0;om_x_0;om_y_0;om_z_0;r_x_0;r_y_0;r_z_0;r_dot_x_0;r_dot_y_0;r_dot_z_0];
 
